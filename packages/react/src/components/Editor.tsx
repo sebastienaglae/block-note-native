@@ -171,19 +171,37 @@ function EditorContent({
 
   useEffect(() => setActiveIndex(0), [slash?.query, slashKey]);
 
-  // Position the slash menu below the caret (web).
-  useLayoutEffect(() => {
-    if (Platform.OS !== "web" || !slashVisible) {
-      setSlashPos(null);
-      return;
-    }
+  // Position the slash menu near the caret, flipping above when low on space (#8).
+  const MENU_H = 340;
+  const computeSlashPos = () => {
+    if (Platform.OS !== "web") return;
     const s = window.getSelection?.();
     if (!s || s.rangeCount === 0) return;
     const rect = s.getRangeAt(0).getBoundingClientRect();
+    if (rect.width === 0 && rect.height === 0 && rect.top === 0) return;
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const openUp = spaceBelow < MENU_H && rect.top > spaceBelow;
     setSlashPos({
-      top: Math.min(rect.bottom + 6, window.innerHeight - 330),
-      left: Math.max(8, Math.min(rect.left, window.innerWidth - 270)),
+      top: openUp ? Math.max(8, rect.top - MENU_H - 6) : rect.bottom + 6,
+      left: Math.max(8, Math.min(rect.left, window.innerWidth - 290)),
     });
+  };
+
+  useLayoutEffect(() => {
+    if (!slashVisible) {
+      setSlashPos(null);
+      return;
+    }
+    computeSlashPos();
+    // Follow the caret on scroll/resize; the menu is position:fixed so it must track.
+    const onScrollResize = () => computeSlashPos();
+    window.addEventListener("scroll", onScrollResize, true);
+    window.addEventListener("resize", onScrollResize);
+    return () => {
+      window.removeEventListener("scroll", onScrollResize, true);
+      window.removeEventListener("resize", onScrollResize);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slashVisible, slashKey, activeIndex]);
 
   const selectItem = (item: SlashMenuItem) => {
@@ -285,6 +303,7 @@ function EditorContent({
         >
           {showPageHeader ? <PageHeader editor={editor} theme={theme} locked={editor.locked} /> : null}
           <View
+            onLayout={(e) => dnd.setBlocksOffset(e.nativeEvent.layout.y)}
             style={{
               width: "100%",
               maxWidth: 740,

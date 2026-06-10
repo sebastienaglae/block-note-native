@@ -108,9 +108,10 @@ export function PageHeader({ editor, theme, locked }: PageHeaderProps): JSX.Elem
           ) : (
             <View style={{ width: "100%", height: 180, backgroundColor: meta.cover }} />
           )}
-          {/* Cover controls: always present (not hover-gated) so they're clickable (#4) */}
+          {/* Cover controls: shown on hover, hidden otherwise (#5) */}
           {!locked ? (
             <View
+              pointerEvents={showControls ? "auto" : "none"}
               style={{
                 position: "absolute",
                 right: 16,
@@ -120,7 +121,7 @@ export function PageHeader({ editor, theme, locked }: PageHeaderProps): JSX.Elem
                 backgroundColor: theme.colors.menuBackground,
                 borderRadius: 6,
                 padding: 2,
-                opacity: showControls ? 1 : 0.85,
+                opacity: showControls ? 1 : 0,
                 zIndex: 20,
               }}
             >

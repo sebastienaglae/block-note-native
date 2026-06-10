@@ -1,5 +1,5 @@
 /** Shared building blocks for media blocks: inline URL input + OSM map embed. */
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Linking, Platform, Pressable, Text, TextInput, View } from "react-native";
 import type { Editor } from "@sebastienaglae/bnn-core";
 import type { Theme } from "../../theme/theme";
@@ -109,6 +109,61 @@ export function MediaEmpty(props: {
   );
 }
 
+/** Custom web audio player (accent play button + seekable progress). */
+export function AudioPlayer({ url, theme }: { url: string; theme: Theme }): JSX.Element {
+  const ref = useRef<HTMLAudioElement | null>(null);
+  const [playing, setPlaying] = useState(false);
+  const [cur, setCur] = useState(0);
+  const [dur, setDur] = useState(0);
+  const [barW, setBarW] = useState(1);
+
+  const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+  const toggle = () => {
+    const a = ref.current;
+    if (!a) return;
+    if (a.paused) {
+      void a.play();
+      setPlaying(true);
+    } else {
+      a.pause();
+      setPlaying(false);
+    }
+  };
+  const pct = dur ? cur / dur : 0;
+
+  return (
+    <View style={{ flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: theme.colors.backgroundSecondary, borderRadius: theme.radius, borderWidth: 1, borderColor: theme.colors.border, paddingVertical: 10, paddingHorizontal: 12 }}>
+      <Pressable onPress={toggle} style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: theme.colors.accent, alignItems: "center", justifyContent: "center" }}>
+        <Icon name={playing ? "pause" : "play"} size={16} color={theme.colors.onAccent} fill={theme.colors.onAccent} />
+      </Pressable>
+      <Pressable
+        style={{ flex: 1, paddingVertical: 6 }}
+        onLayout={(e: { nativeEvent: { layout: { width: number } } }) => setBarW(e.nativeEvent.layout.width || 1)}
+        onPress={(e?: { nativeEvent?: { locationX?: number } }) => {
+          const a = ref.current;
+          const x = e?.nativeEvent?.locationX ?? 0;
+          if (a && dur) a.currentTime = Math.max(0, Math.min(1, x / barW)) * dur;
+        }}
+      >
+        <View style={{ height: 5, borderRadius: 3, backgroundColor: theme.colors.border }}>
+          <View style={{ width: `${pct * 100}%`, height: 5, borderRadius: 3, backgroundColor: theme.colors.accent }} />
+        </View>
+      </Pressable>
+      <Text style={{ fontSize: 11, color: theme.colors.textSecondary, fontVariant: ["tabular-nums"] }}>
+        {fmt(cur)} / {fmt(dur || 0)}
+      </Text>
+      <audio
+        ref={ref}
+        src={url}
+        onTimeUpdate={() => setCur(ref.current?.currentTime || 0)}
+        onLoadedMetadata={() => setDur(ref.current?.duration || 0)}
+        onEnded={() => setPlaying(false)}
+        style={{ display: "none" }}
+      />
+    </View>
+  );
+}
+
 interface Bbox { w: string; s: string; e: string; n: string; lat: string; lon: string }
 
 /** Geocodes a place via OpenStreetMap Nominatim and embeds the OSM map (#17). */
@@ -160,6 +215,13 @@ export function MapEmbed({ query, theme }: { query: string; theme: Theme }): JSX
     );
   }
 
-  const src = `https://www.openstreetmap.org/export/embed.html?bbox=${bbox.w},${bbox.s},${bbox.e},${bbox.n}&layer=mapnik&marker=${bbox.lat},${bbox.lon}`;
-  return <Embed src={src} title="map" height={320} />;
+  // Interactive Leaflet map (pan/zoom) on OpenStreetMap tiles.
+  const html = `<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<style>html,body,#m{height:100%;margin:0}</style></head><body><div id="m"></div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script>
+var lat=${bbox.lat},lon=${bbox.lon};var map=L.map('m').setView([lat,lon],14);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
+L.marker([lat,lon]).addTo(map);</script></body></html>`;
+  return <Embed html={html} title="map" height={320} />;
 }

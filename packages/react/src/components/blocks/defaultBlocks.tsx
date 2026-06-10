@@ -84,11 +84,13 @@ const CodeBlock: BlockRenderer = ({ block, theme, InlineContentView }) => (
     style={{
       backgroundColor: theme.colors.codeBackground,
       borderRadius: theme.radius,
+      borderLeftWidth: 3,
+      borderLeftColor: theme.colors.accent,
       paddingVertical: 12,
       paddingHorizontal: 14,
     }}
   >
-    <Text style={{ fontSize: 11, color: theme.colors.textSecondary, marginBottom: 6, fontFamily: theme.monoFamily }}>
+    <Text style={{ fontSize: 11, color: theme.colors.accent, marginBottom: 6, fontFamily: theme.monoFamily, fontWeight: "600" }}>
       {String(block.props.language || "text")}
     </Text>
     {InlineContentView({

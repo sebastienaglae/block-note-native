@@ -63,6 +63,8 @@ export interface BlockRenderProps<B extends Block = Block> {
   listIndex?: number;
   /** Navigate to another page (used by pageLink blocks); wired by the host app. */
   onOpenPage?: (pageId: string) => void;
+  /** Translate function (key, fallback) for strings inside renderers. */
+  t: (key: string, fallback: string) => string;
   /**
    * Renders the block's editable text region. Custom blocks call this where
    * they want editable content (the BlockNote `contentRef` equivalent).

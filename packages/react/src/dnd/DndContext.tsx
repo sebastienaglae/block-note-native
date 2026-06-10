@@ -28,6 +28,8 @@ interface DndApi {
   handleProps: (blockId: string) => PanResponderInstance["panHandlers"];
   setContainerOffset: (pageY: number) => void;
   setScrollOffset: (y: number) => void;
+  /** Offset of the blocks container within the scroll content (e.g. below the page header). */
+  setBlocksOffset: (y: number) => void;
 }
 
 const DndContext = createContext<DndApi | null>(null);
@@ -52,12 +54,15 @@ export function DndProvider({ editor, topLevelIds, layouts, children }: DndProvi
   stateRef.current = state;
   const containerPageY = useRef(0);
   const scrollOffset = useRef(0);
+  const blocksOffset = useRef(0);
   const idsRef = useRef(topLevelIds);
   idsRef.current = topLevelIds;
   const respondersRef = useRef<Map<string, PanResponderInstance>>(new Map());
 
   const resolveTarget = (screenY: number): { targetId: string | null; placement: "before" | "after" } => {
-    const contentY = screenY - containerPageY.current + scrollOffset.current;
+    // Block layouts are relative to the blocks container; add its offset within the
+    // scroll content (the page header sits above it) so the hit-test lines up.
+    const contentY = screenY - containerPageY.current + scrollOffset.current - blocksOffset.current;
     let result: { targetId: string | null; placement: "before" | "after" } = { targetId: null, placement: "after" };
     for (const id of idsRef.current) {
       const l = layouts.current.get(id);
@@ -119,6 +124,9 @@ export function DndProvider({ editor, topLevelIds, layouts, children }: DndProvi
       },
       setScrollOffset: (y: number) => {
         scrollOffset.current = y;
+      },
+      setBlocksOffset: (y: number) => {
+        blocksOffset.current = y;
       },
     };
     // `state` intentionally included so consumers re-render with the latest indicator.

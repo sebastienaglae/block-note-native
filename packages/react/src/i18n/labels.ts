@@ -125,6 +125,12 @@ export const enLabels = {
   "bnn.tree.moveTop": "Top level",
   "bnn.tree.moveUnder": "Move under",
   "bnn.tree.addChild": "Add a page inside",
+  "bnn.tree.options": "Options",
+  "bnn.tree.drag": "Drag to move",
+
+  // Table
+  "bnn.table.row": "Row",
+  "bnn.table.col": "Column",
 
   // Comments
   "bnn.comments.title": "Comments",

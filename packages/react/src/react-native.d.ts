@@ -41,7 +41,8 @@ declare module "react-native" {
 
   export interface PressableProps {
     style?: StyleProp | ((state: { pressed: boolean; hovered?: boolean }) => StyleProp);
-    onPress?: () => void;
+    onPress?: (e?: { nativeEvent?: { locationX?: number; locationY?: number } }) => void;
+    onLongPress?: () => void;
     onHoverIn?: () => void;
     onHoverOut?: () => void;
     children?: ReactNode;

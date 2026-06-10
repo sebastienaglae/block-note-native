@@ -4,6 +4,7 @@ import type { Block, Editor } from "@sebastienaglae/bnn-core";
 import { useBnn } from "../context";
 import { useDnd } from "../dnd/DndContext";
 import { useCommentsOptional } from "../comments/CommentsContext";
+import { useT } from "../i18n/I18nContext";
 import { Icon } from "../icons/Icon";
 import { SideMenu } from "../ui/SideMenu";
 import { BlockContent } from "./BlockContent";
@@ -20,6 +21,7 @@ export interface BlockComponentProps {
 
 export function BlockComponent({ block, editor, depth, listIndex }: BlockComponentProps): JSX.Element {
   const { theme, blockRenderers, inlineRenderers, setLayout, onOpenPage } = useBnn();
+  const t = useT();
   const dnd = useDnd();
   const comments = useCommentsOptional();
   const [hover, setHover] = useState(false);
@@ -56,6 +58,7 @@ export function BlockComponent({ block, editor, depth, listIndex }: BlockCompone
     listIndex,
     InlineContentView,
     onOpenPage,
+    t,
   };
 
   const hoverProps =

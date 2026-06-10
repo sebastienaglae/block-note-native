@@ -4,7 +4,7 @@ import type { BlockRenderer } from "../../types";
 import type { Theme } from "../../theme/theme";
 import { Icon } from "../../icons/Icon";
 import { Embed } from "./Embed";
-import { MapEmbed, MediaEmpty, hostOf, openUrl, videoEmbed } from "./mediaParts";
+import { AudioPlayer, MapEmbed, MediaEmpty, hostOf, openUrl, videoEmbed } from "./mediaParts";
 
 function Triangle({ collapsed, theme, onPress }: { collapsed: boolean; theme: Theme; onPress: () => void }) {
   return (
@@ -63,8 +63,8 @@ const AudioBlock: BlockRenderer = ({ block, editor, theme }) => {
   const url = String(block.props.url || "");
   if (!url)
     return <MediaEmpty editor={editor} blockId={block.id} propKey="url" icon="audio" theme={theme} labelKey="bnn.media.addAudio" labelFallback="Add an audio file" phKey="bnn.media.urlAudio" phFallback="Audio URL" />;
-  if (Platform.OS === "web") return <audio src={url} controls style={{ width: "100%" }} />;
-  return <Embed src={url} title="audio" height={80} />;
+  if (Platform.OS === "web") return <AudioPlayer url={url} theme={theme} />;
+  return <Embed src={url} title="audio" height={90} />;
 };
 
 const FileBlock: BlockRenderer = ({ block, editor, theme }) => {
@@ -123,7 +123,7 @@ const PageLinkBlock: BlockRenderer = ({ block, theme, onOpenPage }) => (
   </Pressable>
 );
 
-const TableBlock: BlockRenderer = ({ block, editor, theme }) => {
+const TableBlock: BlockRenderer = ({ block, editor, theme, t }) => {
   const cells = (Array.isArray(block.props.cells) ? block.props.cells : [["", ""], ["", ""]]) as string[][];
   const setCell = (r: number, c: number, val: string) => {
     const next = cells.map((row) => row.slice());
@@ -161,8 +161,8 @@ const TableBlock: BlockRenderer = ({ block, editor, theme }) => {
       </View>
       {!editor.locked ? (
         <View style={{ flexDirection: "row", gap: 8, marginTop: 6 }}>
-          <SmallBtn icon="add" label="Row" onPress={addRow} />
-          <SmallBtn icon="add" label="Column" onPress={addCol} />
+          <SmallBtn icon="add" label={t("bnn.table.row", "Row")} onPress={addRow} />
+          <SmallBtn icon="add" label={t("bnn.table.col", "Column")} onPress={addCol} />
         </View>
       ) : null}
     </View>
