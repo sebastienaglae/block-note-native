@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "paths": {
+      "@bnn/core": ["../../packages/core/src/index.ts"],
+      "@bnn/react": ["../../packages/react/src/index.ts"],
+      "@bnn/demo-shared": ["../../packages/demo-shared/src/index.tsx"]
+    }
+  },
+  "include": ["App.tsx", "../../packages/react/src/react-native.d.ts"]
+}

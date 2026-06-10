@@ -1,0 +1,11 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "paths": {
+      "@bnn/react": ["../react/src/index.ts"],
+      "@bnn/core": ["../core/src/index.ts"]
+    }
+  },
+  "include": ["src"]
+}

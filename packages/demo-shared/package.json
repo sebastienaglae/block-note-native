@@ -1,0 +1,20 @@
+{
+  "name": "@bnn/demo-shared",
+  "version": "0.1.0",
+  "description": "Shared demo content + custom components used by BOTH the web and native demos (write-once proof).",
+  "type": "module",
+  "main": "src/index.tsx",
+  "types": "src/index.tsx",
+  "exports": {
+    ".": "./src/index.tsx"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@bnn/react": "0.1.0"
+  },
+  "peerDependencies": {
+    "react": ">=18"
+  }
+}

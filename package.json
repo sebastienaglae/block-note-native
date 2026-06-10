@@ -1,0 +1,23 @@
+{
+  "name": "block-note-native",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Notion-like block editor for Web + React Native (BlockNote-style), built from scratch on a shared platform-agnostic core. No live collaboration; supports custom blocks & inline content.",
+  "workspaces": [
+    "packages/core",
+    "packages/react",
+    "packages/demo-shared",
+    "apps/web",
+    "apps/native"
+  ],
+  "scripts": {
+    "test": "npm run test -w @bnn/core",
+    "typecheck": "npm run typecheck -w @bnn/core && npm run typecheck -w @bnn/react",
+    "dev:web": "npm run dev -w @bnn/web-demo",
+    "build:web": "npm run build -w @bnn/web-demo"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4",
+    "vitest": "^2.1.8"
+  }
+}

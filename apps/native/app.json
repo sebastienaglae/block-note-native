@@ -1,0 +1,13 @@
+{
+  "expo": {
+    "name": "BlockNote Native",
+    "slug": "bnn-native",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "platforms": ["ios", "android", "web"],
+    "web": {
+      "bundler": "metro"
+    }
+  }
+}

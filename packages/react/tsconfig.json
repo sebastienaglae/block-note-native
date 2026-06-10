@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "paths": {
+      "@bnn/core": ["../core/src/index.ts"]
+    }
+  },
+  "include": ["src"]
+}
