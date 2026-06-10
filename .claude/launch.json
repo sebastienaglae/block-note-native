@@ -6,6 +6,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev", "-w", "@bnn/web-demo"],
       "port": 5173
+    },
+    {
+      "name": "native-web",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["-y", "serve", "apps/native/dist", "-l", "4178"],
+      "port": 4178
     }
   ]
 }

@@ -7,5 +7,5 @@
       "@bnn/core": ["../core/src/index.ts"]
     }
   },
-  "include": ["src"]
+  "include": ["src", "../react/src/react-native.d.ts"]
 }
