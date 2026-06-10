@@ -2,16 +2,19 @@
 export type {
   Block,
   BlockDocument,
+  Comment,
   CustomInlineContent,
   EditorSelection,
   InlineContent,
   Link,
+  PageMeta,
   PartialBlock,
   PartialInlineContent,
   StyledText,
   Styles,
   TextSelection,
 } from "./model/types";
+export { TITLE_BLOCK_ID } from "./model/types";
 export { normalizeBlock, normalizeDocument } from "./model/normalize";
 export {
   flattenBlocks,

@@ -11,8 +11,8 @@
     "apps/native"
   ],
   "scripts": {
-    "test": "npm run test -w @bnn/core",
-    "typecheck": "npm run typecheck -w @bnn/core && npm run typecheck -w @bnn/react",
+    "test": "npm run test -w @sebastienaglae/bnn-core",
+    "typecheck": "npm run typecheck -w @sebastienaglae/bnn-core && npm run typecheck -w @sebastienaglae/bnn-react",
     "dev:web": "npm run dev -w @bnn/web-demo",
     "build:web": "npm run build -w @bnn/web-demo"
   },

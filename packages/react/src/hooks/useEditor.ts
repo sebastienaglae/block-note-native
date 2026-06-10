@@ -1,5 +1,5 @@
 import { useRef, useSyncExternalStore } from "react";
-import { Editor, type EditorOptions } from "@bnn/core";
+import { Editor, type EditorOptions } from "@sebastienaglae/bnn-core";
 
 /** Creates a single stable {@link Editor} instance for the component's lifetime. */
 export function useCreateEditor(options: EditorOptions = {}): Editor {

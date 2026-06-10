@@ -8,8 +8,8 @@ import {
   lightTheme,
   useCreateEditor,
   useEditorState,
-} from "@bnn/react";
-import { demoInitialContent, demoSchema } from "@bnn/demo-shared";
+} from "@sebastienaglae/bnn-react";
+import { demoInitialContent, demoSchema } from "@sebastienaglae/bnn-demo-shared";
 
 export default function App() {
   const [dark, setDark] = useState(false);

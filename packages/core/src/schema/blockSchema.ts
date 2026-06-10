@@ -5,7 +5,7 @@
  */
 
 export interface PropSpec {
-  default: string | number | boolean;
+  default: string | number | boolean | unknown[];
   /** Optional enum of allowed values (used for validation / UI controls). */
   values?: ReadonlyArray<string | number | boolean>;
 }
@@ -53,6 +53,49 @@ export const defaultBlockSpecs: BlockSchema = {
     type: "image",
     content: "none",
     propSchema: { url: { default: "" }, caption: { default: "" }, previewWidth: { default: 512 } },
+  },
+
+  // --- collapsible blocks ---
+  toggleListItem: {
+    type: "toggleListItem",
+    content: "inline",
+    propSchema: { ...defaultProps, collapsed: { default: false } },
+  },
+  toggleHeading: {
+    type: "toggleHeading",
+    content: "inline",
+    propSchema: { ...defaultProps, level: { default: 1, values: [1, 2, 3] }, collapsed: { default: false } },
+  },
+
+  // --- media (void) ---
+  video: { type: "video", content: "none", propSchema: { url: { default: "" }, caption: { default: "" } } },
+  audio: { type: "audio", content: "none", propSchema: { url: { default: "" }, caption: { default: "" } } },
+  file: {
+    type: "file",
+    content: "none",
+    propSchema: { url: { default: "" }, name: { default: "" }, size: { default: "" } },
+  },
+  bookmark: {
+    type: "bookmark",
+    content: "none",
+    propSchema: { url: { default: "" }, title: { default: "" }, description: { default: "" }, image: { default: "" } },
+  },
+  mapView: {
+    type: "mapView",
+    content: "none",
+    propSchema: { query: { default: "" }, zoom: { default: 13 } },
+  },
+  pageLink: {
+    type: "pageLink",
+    content: "none",
+    propSchema: { pageId: { default: "" }, title: { default: "Untitled" }, icon: { default: "📄" } },
+  },
+
+  // --- table (cells stored as a 2D string array) ---
+  table: {
+    type: "table",
+    content: "none",
+    propSchema: { cells: { default: [["", ""], ["", ""]] } },
   },
 };
 

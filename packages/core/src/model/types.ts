@@ -94,3 +94,26 @@ export interface TextSelection {
 }
 
 export type EditorSelection = TextSelection | null;
+
+/** Page-level metadata that lives alongside the block tree (icon, cover, title). */
+export interface PageMeta {
+  /** Emoji or short icon string. */
+  icon?: string;
+  /** Cover image URL. */
+  cover?: string;
+  /** Title rich text (rendered as a fixed, non-movable H1). */
+  title: InlineContent[];
+}
+
+/** A comment thread anchored to a block. */
+export interface Comment {
+  id: string;
+  author: string;
+  text: string;
+  /** Epoch ms; supplied by the caller so the model stays deterministic. */
+  createdAt: number;
+  resolved?: boolean;
+}
+
+/** The synthetic block id used by the page title's editable surface. */
+export const TITLE_BLOCK_ID = "__title__";

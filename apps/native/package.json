@@ -11,20 +11,24 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
-    "@bnn/core": "0.1.0",
-    "@bnn/react": "0.1.0",
-    "@bnn/demo-shared": "0.1.0",
+    "@sebastienaglae/bnn-core": "0.1.0",
+    "@sebastienaglae/bnn-react": "0.1.0",
+    "@sebastienaglae/bnn-demo-shared": "0.1.0",
     "@expo/metro-runtime": "~4.0.1",
     "expo": "~52.0.0",
     "expo-asset": "~11.0.1",
     "expo-constants": "~17.0.3",
     "expo-font": "~13.0.1",
     "expo-status-bar": "~2.0.1",
+    "lucide-react": "^0.462.0",
+    "lucide-react-native": "^0.462.0",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "react-native": "0.76.5",
     "react-native-safe-area-context": "4.12.0",
-    "react-native-web": "~0.19.13"
+    "react-native-svg": "15.8.0",
+    "react-native-web": "~0.19.13",
+    "react-native-webview": "13.12.5"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

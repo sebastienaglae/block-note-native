@@ -16,7 +16,7 @@ import {
   type CustomInlineContent,
   type InlineContent,
   type Styles,
-} from "@bnn/core";
+} from "@sebastienaglae/bnn-core";
 import type { BlockTextStyle, RichTextInputProps } from "../types";
 import type { Theme } from "../theme/theme";
 

@@ -5,7 +5,7 @@ import type {
   Editor,
   InlineContent,
   Styles,
-} from "@bnn/core";
+} from "@sebastienaglae/bnn-core";
 import type { Theme } from "./theme/theme";
 
 export interface EditableSelection {
@@ -61,6 +61,8 @@ export interface BlockRenderProps<B extends Block = Block> {
   isSelected: boolean;
   /** 1-based ordinal for numbered list items (else undefined). */
   listIndex?: number;
+  /** Navigate to another page (used by pageLink blocks); wired by the host app. */
+  onOpenPage?: (pageId: string) => void;
   /**
    * Renders the block's editable text region. Custom blocks call this where
    * they want editable content (the BlockNote `contentRef` equivalent).
@@ -87,10 +89,17 @@ export interface SlashMenuItem {
   key: string;
   title: string;
   subtitle?: string;
-  /** Single-char/emoji icon shown on the left. */
+  /** i18n keys (optional); fall back to title/subtitle. */
+  titleKey?: string;
+  subtitleKey?: string;
+  /** A named lucide icon (preferred for default items). */
   icon?: string;
+  /** An emoji shown instead of an icon (for custom items). */
+  emoji?: string;
   aliases?: string[];
   group?: string;
+  /** Special behaviors handled by the editor view (e.g. opening the emoji picker). */
+  kind?: "emoji";
   /** Runs when the item is chosen. The triggering "/query" has already been removed. */
   execute(editor: Editor, blockId: string): void;
 }

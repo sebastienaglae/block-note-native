@@ -1,9 +1,12 @@
 /** Default block renderers. All use React Native primitives so they run on web (via RNW) and native. */
 import { Image, Pressable, Text, View } from "react-native";
 import type { BlockRenderProps, BlockRenderer } from "../../types";
+import { Icon } from "../../icons/Icon";
+import { extraBlockRenderers } from "./extraBlocks";
+import { MediaEmpty } from "./mediaParts";
 
 const Paragraph: BlockRenderer = ({ InlineContentView }) =>
-  InlineContentView({ textStyle: { fontSize: 16 }, placeholder: "Type '/' for commands" });
+  InlineContentView({ textStyle: { fontSize: 16 }, placeholder: "bnn.ph.paragraph" });
 
 const Heading: BlockRenderer = ({ block, InlineContentView }) => {
   const level = Number(block.props.level) || 1;
@@ -11,7 +14,7 @@ const Heading: BlockRenderer = ({ block, InlineContentView }) => {
   const weights: Record<number, "600" | "700"> = { 1: "700", 2: "700", 3: "600" };
   return InlineContentView({
     textStyle: { fontSize: sizes[level], fontWeight: weights[level], lineHeight: sizes[level] * 1.25 },
-    placeholder: `Heading ${level}`,
+    placeholder: "bnn.ph.heading",
   });
 };
 
@@ -20,7 +23,7 @@ const BulletListItem: BlockRenderer = ({ theme, InlineContentView }) => (
     <Text style={{ fontSize: 16, lineHeight: 24, color: theme.colors.text, width: 24, textAlign: "center" }}>
       •
     </Text>
-    <View style={{ flex: 1 }}>{InlineContentView({ textStyle: { fontSize: 16 }, placeholder: "List" })}</View>
+    <View style={{ flex: 1 }}>{InlineContentView({ textStyle: { fontSize: 16 }, placeholder: "bnn.ph.list" })}</View>
   </View>
 );
 
@@ -29,7 +32,7 @@ const NumberedListItem: BlockRenderer = ({ theme, listIndex, InlineContentView }
     <Text style={{ fontSize: 16, lineHeight: 24, color: theme.colors.text, minWidth: 24, textAlign: "right", marginRight: 6 }}>
       {listIndex ?? 1}.
     </Text>
-    <View style={{ flex: 1 }}>{InlineContentView({ textStyle: { fontSize: 16 }, placeholder: "List" })}</View>
+    <View style={{ flex: 1 }}>{InlineContentView({ textStyle: { fontSize: 16 }, placeholder: "bnn.ph.list" })}</View>
   </View>
 );
 
@@ -52,7 +55,7 @@ const CheckListItem: BlockRenderer = ({ block, editor, theme, InlineContentView 
           marginTop: 3,
         }}
       >
-        {checked ? <Text style={{ color: theme.colors.onAccent, fontSize: 12, lineHeight: 14 }}>✓</Text> : null}
+        {checked ? <Icon name="check" size={12} color={theme.colors.onAccent} /> : null}
       </Pressable>
       <View style={{ flex: 1, opacity: checked ? 0.55 : 1 }}>
         {InlineContentView({
@@ -60,7 +63,7 @@ const CheckListItem: BlockRenderer = ({ block, editor, theme, InlineContentView 
             fontSize: 16,
             color: checked ? theme.colors.textSecondary : theme.colors.text,
           },
-          placeholder: "To-do",
+          placeholder: "bnn.ph.todo",
         })}
       </View>
     </View>
@@ -71,7 +74,7 @@ const Quote: BlockRenderer = ({ theme, InlineContentView }) => (
   <View style={{ flexDirection: "row" }}>
     <View style={{ width: 3, borderRadius: 2, backgroundColor: theme.colors.quoteBar, marginRight: 12 }} />
     <View style={{ flex: 1 }}>
-      {InlineContentView({ textStyle: { fontSize: 16, fontStyle: "italic" }, placeholder: "Quote" })}
+      {InlineContentView({ textStyle: { fontSize: 16, fontStyle: "italic" }, placeholder: "bnn.ph.quote" })}
     </View>
   </View>
 );
@@ -90,7 +93,7 @@ const CodeBlock: BlockRenderer = ({ block, theme, InlineContentView }) => (
     </Text>
     {InlineContentView({
       textStyle: { fontSize: 14, fontFamily: theme.monoFamily, color: theme.colors.text },
-      placeholder: "Code",
+      placeholder: "bnn.ph.code",
     })}
   </View>
 );
@@ -101,22 +104,22 @@ const Divider: BlockRenderer = ({ theme }) => (
   </View>
 );
 
-const ImageBlock: BlockRenderer = ({ block, theme }) => {
+const ImageBlock: BlockRenderer = ({ block, editor, theme }) => {
   const url = String(block.props.url || "");
   const caption = String(block.props.caption || "");
   if (!url) {
     return (
-      <View
-        style={{
-          backgroundColor: theme.colors.backgroundSecondary,
-          borderRadius: theme.radius,
-          padding: 16,
-          borderWidth: 1,
-          borderColor: theme.colors.border,
-        }}
-      >
-        <Text style={{ color: theme.colors.textSecondary }}>🖼  Empty image block</Text>
-      </View>
+      <MediaEmpty
+        editor={editor}
+        blockId={block.id}
+        propKey="url"
+        icon="image"
+        theme={theme}
+        labelKey="bnn.media.addImage"
+        labelFallback="Add an image"
+        phKey="bnn.media.urlImage"
+        phFallback="Image URL"
+      />
     );
   }
   return (
@@ -145,6 +148,7 @@ export const defaultBlockRenderers: Record<string, BlockRenderer> = {
   codeBlock: CodeBlock,
   divider: Divider,
   image: ImageBlock,
+  ...extraBlockRenderers,
 };
 
 export type { BlockRenderProps };

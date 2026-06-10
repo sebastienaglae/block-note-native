@@ -1,5 +1,5 @@
 // Re-export the core so consumers can import everything from one place.
-export * from "@bnn/core";
+export * from "@sebastienaglae/bnn-core";
 
 // Cross-platform primitives (resolve to react-native-web on web, react-native on
 // native). Re-exported so custom components & demos need not depend on react-native types directly.
@@ -11,7 +11,7 @@ export { useCreateEditor, useEditorState } from "./hooks/useEditor";
 export { BnnProvider, useBnn, type BnnContextValue, type BlockLayout } from "./context";
 
 // Theme
-export { lightTheme, darkTheme, type Theme } from "./theme/theme";
+export { lightTheme, darkTheme, withAccent, withFont, type Theme, type FontChoice } from "./theme/theme";
 
 // Custom component API
 export {
@@ -32,6 +32,22 @@ export { defaultSlashItems } from "./ui/defaultSlashItems";
 
 // Editable surface (advanced; normally used internally)
 export { RichTextInput } from "./editable/RichTextInput";
+
+// Extra UI building blocks
+export { EmojiPicker } from "./ui/EmojiPicker";
+export { PageHeader } from "./components/PageHeader";
+export { PageTree, type PageNode, type DropPosition } from "./ui/PageTree";
+export { CommentsPanel } from "./ui/CommentsPanel";
+export { useCommentsOptional } from "./comments/CommentsContext";
+
+// Icons (lucide, overridable)
+export { Icon } from "./icons/Icon";
+export { IconsProvider, type IconOverrides, type IconComponentProps } from "./icons/IconContext";
+export type { IconName } from "./icons/iconNames";
+
+// i18n
+export { I18nProvider, useT, type TFunction } from "./i18n/I18nContext";
+export { enLabels, type LabelKey } from "./i18n/labels";
 
 // Types
 export type {

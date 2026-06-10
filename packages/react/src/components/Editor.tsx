@@ -4,48 +4,113 @@ import {
   inlineToString,
   spliceInline,
   type Editor,
-} from "@bnn/core";
+} from "@sebastienaglae/bnn-core";
 import { BnnProvider, useBnn } from "../context";
 import { DndProvider, useDnd } from "../dnd/DndContext";
 import { useEditorState } from "../hooks/useEditor";
-import { lightTheme, type Theme } from "../theme/theme";
+import { lightTheme, withAccent, withFont, type FontChoice, type Theme } from "../theme/theme";
+import { TITLE_BLOCK_ID } from "@sebastienaglae/bnn-core";
 import { BlockComponent } from "./BlockComponent";
+import { PageHeader } from "./PageHeader";
 import { FormattingToolbar } from "../ui/FormattingToolbar";
 import { SlashMenu } from "../ui/SlashMenu";
+import { EmojiPicker } from "../ui/EmojiPicker";
+import { CommentsPanel } from "../ui/CommentsPanel";
+import { CommentsProvider } from "../comments/CommentsContext";
+import { I18nProvider, type TFunction } from "../i18n/I18nContext";
+import { IconsProvider, type IconOverrides } from "../icons/IconContext";
 import type { BlockRenderer, InlineRenderer, SlashMenuItem } from "../types";
 
 export interface BlockNoteViewProps {
   editor: Editor;
   theme?: Theme;
+  /** Custom accent color (any hex/CSS color). Drives accent / soft / selection tints. */
+  accentColor?: string;
+  /** Body font for the whole editor. */
+  font?: FontChoice;
   blockRenderers?: Record<string, BlockRenderer>;
   inlineRenderers?: Record<string, InlineRenderer>;
   slashItems?: SlashMenuItem[];
+  /** Show the Notion-style page header (icon + cover + fixed title). Default true. */
+  showPageHeader?: boolean;
+  /** Called when a pageLink block is opened. */
+  onOpenPage?: (pageId: string) => void;
+  /** Enable the comments UI (side-menu button + thread panel). Default true. */
+  enableComments?: boolean;
+  /**
+   * When set, clicking a block's comment button calls this instead of opening the
+   * built-in panel — render your own <CommentsPanel> wherever you like (#9).
+   */
+  onCommentRequested?: (blockId: string) => void;
+  /** Display name used for new comments. */
+  commentAuthor?: string;
+  /** Translate function: (key, englishFallback) => string. */
+  t?: TFunction;
+  /** Override any named icon with your own component. */
+  icons?: IconOverrides;
   /** Outer style for the editor container. */
   style?: object;
 }
 
 export function BlockNoteView(props: BlockNoteViewProps): JSX.Element {
-  const theme = props.theme ?? lightTheme;
+  const theme = withFont(withAccent(props.theme ?? lightTheme, props.accentColor), props.font);
   return (
-    <BnnProvider
-      editor={props.editor}
-      theme={theme}
-      blockRenderers={props.blockRenderers}
-      inlineRenderers={props.inlineRenderers}
-      slashItems={props.slashItems}
-    >
-      <EditorInner editor={props.editor} theme={theme} style={props.style} />
-    </BnnProvider>
+    <I18nProvider t={props.t}>
+      <IconsProvider icons={props.icons}>
+        <BnnProvider
+          editor={props.editor}
+          theme={theme}
+          blockRenderers={props.blockRenderers}
+          inlineRenderers={props.inlineRenderers}
+          slashItems={props.slashItems}
+          onOpenPage={props.onOpenPage}
+        >
+          <EditorInner
+            editor={props.editor}
+            theme={theme}
+            style={props.style}
+            showPageHeader={props.showPageHeader ?? true}
+            enableComments={props.enableComments ?? true}
+            onCommentRequested={props.onCommentRequested}
+            commentAuthor={props.commentAuthor}
+          />
+        </BnnProvider>
+      </IconsProvider>
+    </I18nProvider>
   );
 }
 
-function EditorInner({ editor, theme, style }: { editor: Editor; theme: Theme; style?: object }): JSX.Element {
+function EditorInner({
+  editor,
+  theme,
+  style,
+  showPageHeader,
+  enableComments,
+  onCommentRequested,
+  commentAuthor,
+}: {
+  editor: Editor;
+  theme: Theme;
+  style?: object;
+  showPageHeader: boolean;
+  enableComments: boolean;
+  onCommentRequested?: (blockId: string) => void;
+  commentAuthor?: string;
+}): JSX.Element {
   useEditorState(editor);
   const { layouts } = useBnn();
   const topLevelIds = editor.document.map((b) => b.id);
   return (
     <DndProvider editor={editor} topLevelIds={topLevelIds} layouts={layouts}>
-      <EditorContent editor={editor} theme={theme} style={style} />
+      <EditorContent
+        editor={editor}
+        theme={theme}
+        style={style}
+        showPageHeader={showPageHeader}
+        enableComments={enableComments}
+        onCommentRequested={onCommentRequested}
+        commentAuthor={commentAuthor}
+      />
     </DndProvider>
   );
 }
@@ -57,13 +122,32 @@ function matchesQuery(item: SlashMenuItem, query: string): boolean {
   return (item.aliases ?? []).some((a) => a.toLowerCase().includes(q));
 }
 
-function EditorContent({ editor, theme, style }: { editor: Editor; theme: Theme; style?: object }): JSX.Element {
+function EditorContent({
+  editor,
+  theme,
+  style,
+  showPageHeader,
+  enableComments,
+  onCommentRequested,
+  commentAuthor,
+}: {
+  editor: Editor;
+  theme: Theme;
+  style?: object;
+  showPageHeader: boolean;
+  enableComments: boolean;
+  onCommentRequested?: (blockId: string) => void;
+  commentAuthor?: string;
+}): JSX.Element {
   const { slashItems } = useBnn();
   const dnd = useDnd();
   const scrollRef = useRef<ScrollView | null>(null);
+  const [commentBlockId, setCommentBlockId] = useState<string | null>(null);
+  const openComments = onCommentRequested ?? setCommentBlockId;
   const [activeIndex, setActiveIndex] = useState(0);
   const [dismissedKey, setDismissedKey] = useState<string | null>(null);
   const [slashPos, setSlashPos] = useState<{ top: number; left: number } | null>(null);
+  const [emoji, setEmoji] = useState<{ top: number; left: number } | null>(null);
 
   const sel = editor.selection;
 
@@ -111,6 +195,10 @@ function EditorContent({ editor, theme, style }: { editor: Editor; theme: Theme;
       const stripped = spliceInline(block.content, s.start, curSel.start, []);
       editor.updateBlock(s.blockId, { content: stripped });
       editor.setSelection({ blockId: s.blockId, start: s.start, end: s.start });
+    }
+    if (item.kind === "emoji") {
+      setEmoji(slashPos ?? { top: 120, left: 120 });
+      return;
     }
     item.execute(editor, s.blockId);
   };
@@ -174,40 +262,62 @@ function EditorContent({ editor, theme, style }: { editor: Editor; theme: Theme;
     return () => document.removeEventListener("keydown", handler, true);
   }, [editor]);
 
-  const toolbarVisible = !!sel && sel.start !== sel.end && !slashVisible;
+  const toolbarVisible =
+    !!sel && sel.start !== sel.end && !slashVisible && sel.blockId !== TITLE_BLOCK_ID && !editor.locked;
   const selectionKey = sel ? `${sel.blockId}:${sel.start}:${sel.end}` : "none";
 
   let counter = 0;
 
-  return (
+  const content = (
     <View style={[{ flex: 1, backgroundColor: theme.colors.background }, style]}>
-      <ScrollView
-        ref={scrollRef}
-        keyboardShouldPersistTaps="handled"
-        onScroll={(e) => dnd.setScrollOffset(e.nativeEvent.contentOffset.y)}
-        scrollEventThrottle={16}
-        onLayout={() => {
-          // Measure the viewport's screen offset for drag hit-testing.
-          const node = scrollRef.current as { measureInWindow?: (cb: (x: number, y: number) => void) => void } | null;
-          node?.measureInWindow?.((_x, y) => dnd.setContainerOffset(y));
-        }}
-        contentContainerStyle={{ paddingVertical: 24 }}
-      >
-        <View style={{ width: "100%", maxWidth: 740, alignSelf: "center", paddingHorizontal: 16 }}>
-          {editor.document.map((block) => {
-            const idx = block.type === "numberedListItem" ? ++counter : (counter = 0);
-            return (
-              <BlockComponent
-                key={block.id}
-                block={block}
-                editor={editor}
-                depth={0}
-                listIndex={block.type === "numberedListItem" ? idx : undefined}
-              />
-            );
-          })}
-        </View>
-      </ScrollView>
+      <View style={{ flex: 1, flexDirection: "row" }}>
+        <ScrollView
+          ref={scrollRef}
+          style={{ flex: 1 }}
+          keyboardShouldPersistTaps="handled"
+          onScroll={(e) => dnd.setScrollOffset(e.nativeEvent.contentOffset.y)}
+          scrollEventThrottle={16}
+          onLayout={() => {
+            const node = scrollRef.current as { measureInWindow?: (cb: (x: number, y: number) => void) => void } | null;
+            node?.measureInWindow?.((_x, y) => dnd.setContainerOffset(y));
+          }}
+          contentContainerStyle={{ paddingBottom: 80 }}
+        >
+          {showPageHeader ? <PageHeader editor={editor} theme={theme} locked={editor.locked} /> : null}
+          <View
+            style={{
+              width: "100%",
+              maxWidth: 740,
+              alignSelf: "center",
+              paddingHorizontal: 16,
+              paddingTop: showPageHeader ? 6 : 24,
+            }}
+          >
+            {editor.document.map((block) => {
+              const idx = block.type === "numberedListItem" ? ++counter : (counter = 0);
+              return (
+                <BlockComponent
+                  key={block.id}
+                  block={block}
+                  editor={editor}
+                  depth={0}
+                  listIndex={block.type === "numberedListItem" ? idx : undefined}
+                />
+              );
+            })}
+          </View>
+        </ScrollView>
+
+        {enableComments && !onCommentRequested && commentBlockId ? (
+          <CommentsPanel
+            editor={editor}
+            theme={theme}
+            blockId={commentBlockId}
+            author={commentAuthor}
+            onClose={() => setCommentBlockId(null)}
+          />
+        ) : null}
+      </View>
 
       <FormattingToolbar editor={editor} theme={theme} visible={toolbarVisible} selectionKey={selectionKey} />
       <SlashMenu
@@ -219,6 +329,30 @@ function EditorContent({ editor, theme, style }: { editor: Editor; theme: Theme;
         onSelect={selectItem}
         onHover={setActiveIndex}
       />
+      {emoji ? (
+        <View
+          style={
+            Platform.OS === "web"
+              ? ({ position: "fixed", top: emoji.top, left: emoji.left, zIndex: 1000 } as object)
+              : ({ position: "absolute", top: 60, left: 16, zIndex: 1000 } as object)
+          }
+        >
+          <EmojiPicker
+            theme={theme}
+            onSelect={(e) => {
+              editor.insertInlineContent(e);
+              setEmoji(null);
+            }}
+          />
+        </View>
+      ) : null}
     </View>
+  );
+
+  if (!enableComments) return content;
+  return (
+    <CommentsProvider value={{ openComments, activeBlockId: commentBlockId }}>
+      {content}
+    </CommentsProvider>
   );
 }

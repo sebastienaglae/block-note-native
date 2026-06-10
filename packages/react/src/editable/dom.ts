@@ -9,7 +9,7 @@ import {
   normalizeInline,
   type InlineContent,
   type Styles,
-} from "@bnn/core";
+} from "@sebastienaglae/bnn-core";
 import type { Theme } from "../theme/theme";
 
 const TEXT_NODE = 3;

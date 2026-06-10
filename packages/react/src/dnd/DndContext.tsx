@@ -4,9 +4,17 @@
  * measured layouts. Nesting is done with Tab / Shift-Tab.
  */
 import { createContext, useContext, useMemo, useRef, useState, type ReactNode } from "react";
-import { PanResponder, type PanResponderInstance } from "react-native";
-import type { Editor } from "@bnn/core";
+import { PanResponder, Platform, type PanResponderInstance } from "react-native";
+import type { Editor } from "@sebastienaglae/bnn-core";
 import type { BlockLayout } from "../context";
+
+/** Suppress text selection + show a grabbing cursor while dragging (web only). */
+function setDragging(on: boolean) {
+  if (Platform.OS !== "web" || typeof document === "undefined") return;
+  document.body.style.userSelect = on ? "none" : "";
+  (document.body.style as unknown as { webkitUserSelect: string }).webkitUserSelect = on ? "none" : "";
+  document.body.style.cursor = on ? "grabbing" : "";
+}
 
 export interface DragState {
   draggingId: string | null;
@@ -72,6 +80,7 @@ export function DndProvider({ editor, topLevelIds, layouts, children }: DndProvi
         onStartShouldSetPanResponder: () => true,
         onMoveShouldSetPanResponder: () => true,
         onPanResponderGrant: () => {
+          setDragging(true);
           setState({ draggingId: blockId, targetId: blockId, placement: "after" });
         },
         onPanResponderMove: (_evt: unknown, gesture: { moveY: number }) => {
@@ -82,13 +91,17 @@ export function DndProvider({ editor, topLevelIds, layouts, children }: DndProvi
           }
         },
         onPanResponderRelease: () => {
+          setDragging(false);
           const { draggingId, targetId, placement } = stateRef.current;
           if (draggingId && targetId && targetId !== draggingId) {
             editor.moveBlock(draggingId, targetId, placement);
           }
           setState({ draggingId: null, targetId: null, placement: "after" });
         },
-        onPanResponderTerminate: () => setState({ draggingId: null, targetId: null, placement: "after" }),
+        onPanResponderTerminate: () => {
+          setDragging(false);
+          setState({ draggingId: null, targetId: null, placement: "after" });
+        },
       });
     };
     return {

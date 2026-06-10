@@ -8,15 +8,19 @@ A Notion-like, block-based rich-text editor (in the spirit of [BlockNote](https:
 
 ## ✨ Features
 
-- **Block types:** paragraph, headings (1–3), bulleted / numbered / to-do lists, quote, code block, divider, image.
-- **Inline formatting:** bold, italic, underline, strikethrough, inline code, links, text color & highlight.
+- **Block types:** paragraph, headings (1–3), bulleted / numbered / to-do lists, quote, code block, divider, image, **toggle list**, **toggle headings (1–3)**, **video**, **audio**, **file**, **web bookmark**, **map**, **table**, **link-to-page**.
+- **Inline formatting:** bold, italic, underline, strikethrough, inline code, links, text color & highlight, **emoji**, **@mentions**.
+- **Page header** — Notion-style **cover image**, **emoji icon** (with a picker), and a **fixed title** that can't be moved or deleted.
+- **Page tree sidebar** — collapsible, page icons, favorites, and a per-item **⋯ menu** (favorite / rename / move / delete) + **+** to add a child. Pages contain pages.
+- **Comments** — per-block threads with add / edit / delete / resolve and a count badge.
 - **Slash menu** (`/`) — filterable, grouped, keyboard-navigable, extensible.
 - **Formatting toolbar** that floats over the selection (web) / docks above the keyboard (native).
 - **Side menu** per block with an add button and a **drag handle** to reorder.
 - **Keyboard model:** Enter splits, Backspace-at-start merges, **Tab / Shift-Tab** nest/un-nest, arrow navigation across blocks.
 - **Markdown input rules:** `# `, `## `, `- `, `1. `, `[] `, `> `, ` ``` `, `---`.
-- **Undo / redo**, JSON & Markdown **import/export**, localStorage persistence (web demo).
-- **Light / dark themes.**
+- **Theming:** light / dark, **custom accent color** (any color → accent / soft / selection tints), and a **font switcher** (default / serif / mono).
+- **Lock / read-only** mode — a hook for "live" features (presence, locking) without a backend.
+- **Undo / redo** (covers content, page meta & comments), JSON & Markdown **import/export**, localStorage persistence.
 - **Custom components** — define a block or inline content **once** (with React Native primitives) and it renders on both platforms.
 
 ---
@@ -28,9 +32,9 @@ Three layers. The trick that makes "same features on both platforms" real is **[
 ```
 block-note-native/                 # npm-workspaces monorepo
 ├─ packages/
-│  ├─ core/         @bnn/core        Pure-TS engine: model, schema, Editor, transforms, history, markdown. No UI.
-│  ├─ react/        @bnn/react       Cross-platform UI (RN primitives + RNW) + custom-component API.
-│  └─ demo-shared/  @bnn/demo-shared ONE definition of demo custom components, used by both apps.
+│  ├─ core/         @sebastienaglae/bnn-core        Pure-TS engine: model, schema, Editor, transforms, history, markdown. No UI.
+│  ├─ react/        @sebastienaglae/bnn-react       Cross-platform UI (RN primitives + RNW) + custom-component API.
+│  └─ demo-shared/  @sebastienaglae/bnn-demo-shared ONE definition of demo custom components, used by both apps.
 └─ apps/
    ├─ web/          Vite + React + react-native-web
    └─ native/       Expo (SDK 52)
@@ -53,7 +57,7 @@ Requires Node 18+.
 
 ```bash
 npm install        # installs all workspaces
-npm test           # runs the @bnn/core unit tests
+npm test           # runs the @sebastienaglae/bnn-core unit tests
 ```
 
 ### Run the web demo (Vite)
@@ -84,12 +88,12 @@ npm run typecheck
 
 ## 🧩 Custom components
 
-This is the headline feature. Define a component **once** with `@bnn/react`'s cross-platform primitives; it works on web and native.
+This is the headline feature. Define a component **once** with `@sebastienaglae/bnn-react`'s cross-platform primitives; it works on web and native.
 
 ### A custom block
 
 ```tsx
-import { createReactBlockSpec, View, Text } from "@bnn/react";
+import { createReactBlockSpec, View, Text } from "@sebastienaglae/bnn-react";
 
 export const CalloutBlock = createReactBlockSpec(
   {
@@ -115,7 +119,7 @@ export const CalloutBlock = createReactBlockSpec(
 ### A custom inline content (e.g. a mention)
 
 ```tsx
-import { createReactInlineContentSpec, View, Text } from "@bnn/react";
+import { createReactInlineContentSpec, View, Text } from "@sebastienaglae/bnn-react";
 
 export const MentionInline = createReactInlineContentSpec(
   { type: "mention", content: "none", propSchema: { user: { default: "" } } },
@@ -134,7 +138,7 @@ Insert it anywhere with `editor.insertInlineContent([{ type: "mention", props: {
 ### Assemble the schema and mount the editor
 
 ```tsx
-import { BlockNoteView, useCreateEditor, createBlockNoteSchema } from "@bnn/react";
+import { BlockNoteView, useCreateEditor, createBlockNoteSchema } from "@sebastienaglae/bnn-react";
 
 const schema = createBlockNoteSchema({
   blockSpecs: [CalloutBlock],
@@ -163,12 +167,81 @@ See [`packages/demo-shared/src/index.tsx`](packages/demo-shared/src/index.tsx) f
 
 ---
 
-## 📚 Core API (`@bnn/core`)
+## 🧱 Composable, decoupled components
+
+The page tree, the editor, and the comments are **independent components** you can place anywhere:
+
+```tsx
+import { PageTree, BlockNoteView, CommentsPanel } from "@sebastienaglae/bnn-react";
+
+// Tree on the left, editor in the middle, your own comments panel on the right.
+const [commentBlockId, setCommentBlockId] = useState<string | null>(null);
+
+<>
+  <PageTree pages={pages} activeId={id} onSelect={...} onAddChild={...} onRename={...}
+            onRemove={...} onToggleFavorite={...} onMove={...} theme={theme} />
+  <BlockNoteView editor={editor} onCommentRequested={setCommentBlockId} /* emits, doesn't render */ />
+  {commentBlockId && (
+    <CommentsPanel editor={editor} blockId={commentBlockId} onClose={() => setCommentBlockId(null)} />
+  )}
+</>
+```
+
+Omit `onCommentRequested` to use the built-in docked comments panel instead.
+
+## 🌍 i18n (100% translatable)
+
+Every user-facing string goes through `t(key, fallback)`. Pass your own translate function (any library):
+
+```tsx
+import i18next from "i18next";
+import { BlockNoteView, PageTree, enLabels } from "@sebastienaglae/bnn-react";
+
+// 1. Register the English catalog (then translate the values for other locales).
+i18next.init({ lng: "fr", resources: { en: { translation: enLabels }, fr: { translation: { /* … */ } } } });
+
+// 2. Adapt i18next to the (key, fallback) signature.
+const t = (key: string, fallback: string) => i18next.t(key, { defaultValue: fallback });
+
+<BlockNoteView editor={editor} t={t} />;   // PageTree / CommentsPanel also accept `t`
+```
+
+`enLabels` is the full key catalog (slash menu, tree, comments, toolbar, placeholders…). Nothing is hard-coded.
+
+## 🎨 Icons & theming
+
+Icons come from **lucide** (platform-split: `lucide-react` on web, `lucide-react-native` on native). Override any of them:
+
+```tsx
+import { BlockNoteView } from "@sebastienaglae/bnn-react";
+import { Sparkles } from "lucide-react";
+
+<BlockNoteView editor={editor} icons={{ add: Sparkles }} />;
+```
+
+The **accent color** is fully configurable (`accentColor="#7c3aed"`); it drives the accent, soft, and **text-selection** tints. No accent palette is baked in — you ship your own.
+
+## 📦 Publishing (GitHub Packages)
+
+The two libraries are published to **GitHub Packages** under the `@sebastienaglae` scope:
+
+```bash
+npm run build -w @sebastienaglae/bnn-core    # tsup  → dist (ESM + .d.ts)
+npm run build -w @sebastienaglae/bnn-react   # tsc   → dist (preserves .native/.web files)
+```
+
+`@sebastienaglae/bnn-core` builds with **tsup**; `@sebastienaglae/bnn-react` builds with **tsc** so the platform-split files (`*.native.js`) survive for native consumers. Pushing a `v*` tag runs [`.github/workflows/publish.yml`](.github/workflows/publish.yml); PRs run [`.github/workflows/ci.yml`](.github/workflows/ci.yml) (test + type-check + build). Consumers add an `.npmrc` with `@sebastienaglae:registry=https://npm.pkg.github.com`.
+
+> Native embeds (video / map / bookmark) use `react-native-webview`; maps use **OpenStreetMap** (Nominatim geocoding). These are optional peer deps — install them in your native app.
+
+---
+
+## 📚 Core API (`@sebastienaglae/bnn-core`)
 
 The `Editor` is framework-agnostic and fully testable on its own:
 
 ```ts
-import { Editor, blocksToMarkdown } from "@bnn/core";
+import { Editor, blocksToMarkdown } from "@sebastienaglae/bnn-core";
 
 const editor = new Editor({ initialContent: [{ type: "heading", content: "Hi" }] });
 
@@ -198,6 +271,6 @@ console.log(blocksToMarkdown(editor.document));
 
 ## 🧪 What's verified
 
-- `@bnn/core`: 17 unit tests (split/merge/indent, inline mark toggling, markdown round-trip).
+- `@sebastienaglae/bnn-core`: 17 unit tests (split/merge/indent, inline mark toggling, markdown round-trip).
 - Web (Vite): rendering, editing, slash menu (+ custom items), formatting toolbar, markdown rules, Tab nesting, persistence — all exercised.
 - Native (Expo): bundles cleanly through Metro in the monorepo and renders the full editor (incl. custom block + mention) via react-native-web; the same shared code path.

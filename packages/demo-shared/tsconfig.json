@@ -3,8 +3,8 @@
   "compilerOptions": {
     "rootDir": "src",
     "paths": {
-      "@bnn/react": ["../react/src/index.ts"],
-      "@bnn/core": ["../core/src/index.ts"]
+      "@sebastienaglae/bnn-react": ["../react/src/index.ts"],
+      "@sebastienaglae/bnn-core": ["../core/src/index.ts"]
     }
   },
   "include": ["src", "../react/src/react-native.d.ts"]

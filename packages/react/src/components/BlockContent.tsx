@@ -8,11 +8,12 @@ import {
   type CustomInlineContent,
   type Editor,
   type InlineContent,
-} from "@bnn/core";
+} from "@sebastienaglae/bnn-core";
 import { Text } from "react-native";
 import type { BlockTextStyle, EditableSelection, InlineRenderer } from "../types";
 import type { Theme } from "../theme/theme";
 import { RichTextInput } from "../editable/RichTextInput";
+import { useT } from "../i18n/I18nContext";
 
 export interface BlockContentProps {
   block: Block;
@@ -27,6 +28,9 @@ export interface BlockContentProps {
 
 export function BlockContent(props: BlockContentProps): JSX.Element {
   const { block, editor, theme, active, selection, textStyle, placeholder, inlineRenderers } = props;
+  const t = useT();
+  // `placeholder` may be an i18n key (default blocks) or a raw string (custom blocks).
+  const resolvedPlaceholder = placeholder ? t(placeholder, placeholder) : undefined;
   const content = block.content ?? [];
 
   const renderCustomInline = (ic: CustomInlineContent) => {
@@ -67,7 +71,8 @@ export function BlockContent(props: BlockContentProps): JSX.Element {
       content={content}
       active={active}
       selection={selection}
-      placeholder={placeholder}
+      placeholder={resolvedPlaceholder}
+      editable={!editor.locked}
       textStyle={textStyle}
       theme={theme}
       renderCustomInline={renderCustomInline}

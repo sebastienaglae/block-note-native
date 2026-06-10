@@ -32,8 +32,10 @@ import {
 } from "../util/inline";
 import type {
   Block,
+  Comment,
   EditorSelection,
   InlineContent,
+  PageMeta,
   PartialBlock,
   PartialInlineContent,
   Styles,
@@ -42,6 +44,9 @@ import type {
 
 export interface EditorOptions {
   initialContent?: PartialBlock[];
+  initialMeta?: { icon?: string; cover?: string; title?: PartialInlineContent };
+  initialComments?: Record<string, Comment[]>;
+  locked?: boolean;
   blockSpecs?: BlockConfig[];
   inlineSpecs?: InlineContentConfig[];
 }
@@ -54,6 +59,9 @@ export class Editor {
 
   private _document: Block[];
   private _selection: EditorSelection = null;
+  private _meta: PageMeta;
+  private _comments: Record<string, Comment[]>;
+  private _locked: boolean;
   private readonly history = new History();
   private readonly listeners = new Set<Listener>();
   private version = 0;
@@ -65,6 +73,13 @@ export class Editor {
       options.initialContent ?? [{ type: "paragraph" }],
       this.schema,
     );
+    this._meta = {
+      icon: options.initialMeta?.icon,
+      cover: options.initialMeta?.cover,
+      title: partialToInline(options.initialMeta?.title),
+    };
+    this._comments = options.initialComments ?? {};
+    this._locked = options.locked ?? false;
   }
 
   // ---- state access -------------------------------------------------------
@@ -91,11 +106,23 @@ export class Editor {
   }
 
   private snapshot(): Snapshot {
-    return { document: this._document, selection: this._selection };
+    return {
+      document: this._document,
+      selection: this._selection,
+      meta: this._meta,
+      comments: this._comments,
+    };
   }
 
-  /** Runs a mutation with undo support. `fn` returns the next document (+ optional selection). */
-  private transact(fn: () => { document: Block[]; selection?: EditorSelection } | null): void {
+  /** Runs a mutation with undo support. `fn` returns the changed parts of the state. */
+  private transact(
+    fn: () => Partial<{
+      document: Block[];
+      selection: EditorSelection;
+      meta: PageMeta;
+      comments: Record<string, Comment[]>;
+    }> | null,
+  ): void {
     const before = this.snapshot();
     const result = fn();
     if (!result) return;
@@ -103,9 +130,16 @@ export class Editor {
     this.applyResult(result);
   }
 
-  private applyResult(result: { document: Block[]; selection?: EditorSelection }): void {
-    this._document = ensureNonEmpty(result.document, this.schema);
+  private applyResult(result: Partial<{
+    document: Block[];
+    selection: EditorSelection;
+    meta: PageMeta;
+    comments: Record<string, Comment[]>;
+  }>): void {
+    if (result.document !== undefined) this._document = ensureNonEmpty(result.document, this.schema);
     if (result.selection !== undefined) this._selection = result.selection;
+    if (result.meta !== undefined) this._meta = result.meta;
+    if (result.comments !== undefined) this._comments = result.comments;
     this.emit();
   }
 
@@ -376,20 +410,20 @@ export class Editor {
 
   undo(): void {
     const result = this.history.undo(this.snapshot());
-    if (result) {
-      this._document = result.document;
-      this._selection = result.selection;
-      this.emit();
-    }
+    if (result) this.restore(result);
   }
 
   redo(): void {
     const result = this.history.redo(this.snapshot());
-    if (result) {
-      this._document = result.document;
-      this._selection = result.selection;
-      this.emit();
-    }
+    if (result) this.restore(result);
+  }
+
+  private restore(s: { document: Block[]; selection: EditorSelection; meta: PageMeta; comments: Record<string, Comment[]> }): void {
+    this._document = s.document;
+    this._selection = s.selection;
+    this._meta = s.meta;
+    this._comments = s.comments;
+    this.emit();
   }
 
   get canUndo(): boolean {
@@ -400,11 +434,91 @@ export class Editor {
     return this.history.canRedo;
   }
 
+  // ---- page metadata (icon / cover / title) -------------------------------
+
+  get meta(): PageMeta {
+    return this._meta;
+  }
+
+  setPageTitle(content: PartialInlineContent, selection?: EditorSelection): void {
+    this.transact(() => ({
+      meta: { ...this._meta, title: partialToInline(content) },
+      selection: selection ?? this._selection,
+    }));
+  }
+
+  setPageIcon(icon: string | null): void {
+    this.transact(() => ({ meta: { ...this._meta, icon: icon ?? undefined } }));
+  }
+
+  setPageCover(cover: string | null): void {
+    this.transact(() => ({ meta: { ...this._meta, cover: cover ?? undefined } }));
+  }
+
+  // ---- comments -----------------------------------------------------------
+
+  get comments(): Record<string, Comment[]> {
+    return this._comments;
+  }
+
+  getComments(blockId: string): Comment[] {
+    return this._comments[blockId] ?? [];
+  }
+
+  addComment(blockId: string, comment: Comment): void {
+    this.transact(() => ({
+      comments: { ...this._comments, [blockId]: [...(this._comments[blockId] ?? []), comment] },
+    }));
+  }
+
+  updateComment(blockId: string, commentId: string, patch: Partial<Comment>): void {
+    this.transact(() => {
+      const list = this._comments[blockId];
+      if (!list) return null;
+      return {
+        comments: {
+          ...this._comments,
+          [blockId]: list.map((c) => (c.id === commentId ? { ...c, ...patch } : c)),
+        },
+      };
+    });
+  }
+
+  removeComment(blockId: string, commentId: string): void {
+    this.transact(() => {
+      const list = this._comments[blockId];
+      if (!list) return null;
+      const next = list.filter((c) => c.id !== commentId);
+      const comments = { ...this._comments };
+      if (next.length) comments[blockId] = next;
+      else delete comments[blockId];
+      return { comments };
+    });
+  }
+
+  // ---- lock / read-only ---------------------------------------------------
+
+  get locked(): boolean {
+    return this._locked;
+  }
+
+  setLocked(locked: boolean): void {
+    this._locked = locked;
+    this.emit();
+  }
+
   // ---- serialization ------------------------------------------------------
 
-  replaceDocument(partials: PartialBlock[]): void {
+  /** Full page snapshot for persistence (meta + comments + blocks). */
+  toJSON(): { meta: PageMeta; comments: Record<string, Comment[]>; blocks: Block[] } {
+    return { meta: this._meta, comments: this._comments, blocks: this._document };
+  }
+
+  replaceDocument(partials: PartialBlock[], meta?: { icon?: string; cover?: string; title?: PartialInlineContent }, comments?: Record<string, Comment[]>): void {
     this.transact(() => ({
       document: normalizeDocument(partials, this.schema),
+      meta: meta ? { icon: meta.icon, cover: meta.cover, title: partialToInline(meta.title) } : this._meta,
+      comments: comments ?? this._comments,
       selection: null,
     }));
   }

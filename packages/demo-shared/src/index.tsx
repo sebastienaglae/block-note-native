@@ -11,7 +11,7 @@ import {
   createReactInlineContentSpec,
   type PartialBlock,
   type SlashMenuItem,
-} from "@bnn/react";
+} from "@sebastienaglae/bnn-react";
 
 /** Custom BLOCK: a colored callout box with an emoji and editable text. */
 export const CalloutBlock = createReactBlockSpec(
@@ -134,4 +134,86 @@ export const demoInitialContent: PartialBlock[] = [
     props: { language: "ts" },
     content: "const editor = new Editor({ initialContent });",
   },
+  { type: "heading", props: { level: 2 }, content: "More block types" },
+  {
+    type: "toggleListItem",
+    props: { collapsed: false },
+    content: "Toggle list (click ▸ to collapse)",
+    children: [{ type: "bulletListItem", content: "Hidden when collapsed" }],
+  },
+  { type: "bookmark", props: { url: "https://github.com/TypeCellOS/BlockNote", title: "BlockNote on GitHub" } },
+  {
+    type: "table",
+    props: {
+      cells: [
+        ["Block", "Platform"],
+        ["Toggle / table / map", "web + native"],
+      ],
+    },
+  },
+  { type: "paragraph", content: "Try /video, /audio, /file, /map, /table, /toggle, /emoji…" },
+];
+
+/** A page that contains one of every block type. */
+export const allElementsContent: PartialBlock[] = [
+  { type: "heading", props: { level: 1 }, content: "Heading 1" },
+  { type: "heading", props: { level: 2 }, content: "Heading 2" },
+  { type: "heading", props: { level: 3 }, content: "Heading 3" },
+  {
+    type: "paragraph",
+    content: [
+      { type: "text", text: "Paragraph with ", styles: {} },
+      { type: "text", text: "bold", styles: { bold: true } },
+      { type: "text", text: ", ", styles: {} },
+      { type: "text", text: "italic", styles: { italic: true } },
+      { type: "text", text: ", ", styles: {} },
+      { type: "text", text: "underline", styles: { underline: true } },
+      { type: "text", text: ", ", styles: {} },
+      { type: "text", text: "strike", styles: { strike: true } },
+      { type: "text", text: ", ", styles: {} },
+      { type: "text", text: "code", styles: { code: true } },
+      { type: "text", text: ", a ", styles: {} },
+      { type: "link", href: "https://example.com", content: [{ type: "text", text: "link", styles: {} }] },
+      { type: "text", text: ", a mention ", styles: {} },
+      { type: "mention", props: { user: "Alice" }, content: [{ type: "text", text: "@Alice", styles: {} }] },
+      { type: "text", text: " and emoji 🎉.", styles: {} },
+    ],
+  },
+  { type: "callout", props: { emoji: "💡", color: "blue" }, content: "Callout (custom block)" },
+  { type: "bulletListItem", content: "Bulleted list item" },
+  { type: "numberedListItem", content: "Numbered list item" },
+  { type: "checkListItem", props: { checked: true }, content: "Checked to-do" },
+  { type: "checkListItem", props: { checked: false }, content: "Unchecked to-do" },
+  {
+    type: "toggleListItem",
+    props: { collapsed: false },
+    content: "Toggle list",
+    children: [{ type: "paragraph", content: "Inside the toggle" }],
+  },
+  {
+    type: "toggleHeading",
+    props: { level: 2, collapsed: false },
+    content: "Toggle heading",
+    children: [{ type: "paragraph", content: "Inside the toggle heading" }],
+  },
+  { type: "quote", content: "A quote block." },
+  { type: "codeBlock", props: { language: "ts" }, content: "const x: number = 42;" },
+  { type: "divider" },
+  { type: "image", props: { url: "https://picsum.photos/seed/bnn/800/400", caption: "An image" } },
+  { type: "video", props: { url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ" } },
+  { type: "audio", props: { url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" } },
+  { type: "file", props: { url: "https://example.com/report.pdf", name: "report.pdf" } },
+  { type: "bookmark", props: { url: "https://github.com/TypeCellOS/BlockNote", title: "BlockNote on GitHub" } },
+  { type: "mapView", props: { query: "Eiffel Tower, Paris" } },
+  {
+    type: "table",
+    props: {
+      cells: [
+        ["Name", "Type"],
+        ["Alpha", "A"],
+        ["Beta", "B"],
+      ],
+    },
+  },
+  { type: "paragraph", content: "End of the gallery." },
 ];

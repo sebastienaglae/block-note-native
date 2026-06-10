@@ -13,7 +13,7 @@
  *   const { blockSpecs, inlineSpecs, blockRenderers, inlineRenderers, slashItems } =
  *     createBlockNoteSchema({ blockSpecs: [Callout], inlineSpecs: [Mention] });
  */
-import type { BlockConfig, InlineContentConfig } from "@bnn/core";
+import type { BlockConfig, InlineContentConfig } from "@sebastienaglae/bnn-core";
 import type { BlockRenderer, InlineRenderer, SlashMenuItem } from "./types";
 import { defaultSlashItems } from "./ui/defaultSlashItems";
 
@@ -50,7 +50,8 @@ export function createReactBlockSpec(
       key: config.type,
       title: sm.title,
       subtitle: sm.subtitle,
-      icon: sm.icon,
+      // Custom blocks typically use an emoji; default blocks use a lucide icon name.
+      emoji: sm.icon,
       group: sm.group ?? "Custom",
       aliases: sm.aliases,
       execute: (editor, blockId) => {

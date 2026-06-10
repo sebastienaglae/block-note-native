@@ -3,9 +3,9 @@
   "compilerOptions": {
     "types": ["vite/client", "react", "react-dom"],
     "paths": {
-      "@bnn/core": ["../../packages/core/src/index.ts"],
-      "@bnn/react": ["../../packages/react/src/index.ts"],
-      "@bnn/demo-shared": ["../../packages/demo-shared/src/index.tsx"]
+      "@sebastienaglae/bnn-core": ["../../packages/core/src/index.ts"],
+      "@sebastienaglae/bnn-react": ["../../packages/react/src/index.ts"],
+      "@sebastienaglae/bnn-demo-shared": ["../../packages/demo-shared/src/index.tsx"]
     }
   },
   "include": ["src", "../../packages/react/src/react-native.d.ts"]

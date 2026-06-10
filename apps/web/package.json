@@ -10,9 +10,10 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
-    "@bnn/core": "0.1.0",
-    "@bnn/react": "0.1.0",
-    "@bnn/demo-shared": "0.1.0",
+    "@sebastienaglae/bnn-core": "0.1.0",
+    "@sebastienaglae/bnn-react": "0.1.0",
+    "@sebastienaglae/bnn-demo-shared": "0.1.0",
+    "lucide-react": "^0.462.0",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "react-native-web": "^0.19.13"

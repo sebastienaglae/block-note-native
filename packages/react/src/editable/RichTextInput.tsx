@@ -13,7 +13,7 @@ import {
   inlineToString,
   type CustomInlineContent,
   type InlineContent,
-} from "@bnn/core";
+} from "@sebastienaglae/bnn-core";
 import type { RichTextInputProps } from "../types";
 import {
   domPointToOffset,
@@ -25,6 +25,18 @@ import {
 
 function contentEquals(a: InlineContent[], b: InlineContent[]): boolean {
   return JSON.stringify(a) === JSON.stringify(b);
+}
+
+/** Injects/updates a themed ::selection color for editable regions (#6). */
+function applySelectionColor(color: string) {
+  if (typeof document === "undefined") return;
+  let el = document.getElementById("bnn-selection-style") as HTMLStyleElement | null;
+  if (!el) {
+    el = document.createElement("style");
+    el.id = "bnn-selection-style";
+    document.head.appendChild(el);
+  }
+  el.textContent = `.bnn-ce ::selection,.bnn-ce::selection{background-color:${color};}`;
 }
 
 export function RichTextInput(props: RichTextInputProps): JSX.Element {
@@ -105,6 +117,8 @@ export function RichTextInput(props: RichTextInputProps): JSX.Element {
   });
 
   useEffect(() => () => unmountIslands(), []); // cleanup on unmount
+
+  useEffect(() => applySelectionColor(theme.colors.selection), [theme.colors.selection]);
 
   // Report selection changes while focused.
   useEffect(() => {
@@ -225,6 +239,7 @@ export function RichTextInput(props: RichTextInputProps): JSX.Element {
       {empty && placeholder ? <div style={placeholderStyle}>{placeholder}</div> : null}
       <div
         ref={ref}
+        className="bnn-ce"
         contentEditable={editable}
         suppressContentEditableWarning
         spellCheck

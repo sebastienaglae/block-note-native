@@ -25,9 +25,12 @@ export interface Theme {
   /** Named highlight colors usable as inline `backgroundColor`. */
   highlightColors: Record<string, string>;
   fontFamily: string;
+  serifFamily: string;
   monoFamily: string;
   radius: number;
 }
+
+export type FontChoice = "default" | "serif" | "mono";
 
 const textColors = {
   default: "inherit",
@@ -79,9 +82,43 @@ export const lightTheme: Theme = {
   highlightColors,
   fontFamily:
     'system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+  serifFamily: 'Georgia, Cambria, "Times New Roman", Times, serif',
   monoFamily: 'ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace',
   radius: 6,
 };
+
+function hexToRgb(hex: string): [number, number, number] | null {
+  const six = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
+  if (six) {
+    const n = parseInt(six[1], 16);
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  }
+  const three = /^#?([0-9a-f]{3})$/i.exec(hex.trim());
+  if (three) {
+    const s = three[1];
+    return [parseInt(s[0] + s[0], 16), parseInt(s[1] + s[1], 16), parseInt(s[2] + s[2], 16)];
+  }
+  return null;
+}
+
+/** Returns a copy of `theme` whose body font is the chosen family. */
+export function withFont(theme: Theme, font: "default" | "serif" | "mono" | undefined): Theme {
+  if (!font || font === "default") return theme;
+  const fontFamily = font === "serif" ? theme.serifFamily : theme.monoFamily;
+  return { ...theme, fontFamily };
+}
+
+/** Returns a copy of `theme` with a custom accent color; derives soft/selection tints. */
+export function withAccent(theme: Theme, color: string | undefined): Theme {
+  if (!color) return theme;
+  const rgb = hexToRgb(color);
+  const soft = rgb ? `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${theme.dark ? 0.24 : 0.12})` : theme.colors.accentSoft;
+  const selection = rgb ? `rgba(${rgb[0]},${rgb[1]},${rgb[2]},0.3)` : theme.colors.selection;
+  return {
+    ...theme,
+    colors: { ...theme.colors, accent: color, accentSoft: soft, selection },
+  };
+}
 
 export const darkTheme: Theme = {
   dark: true,
@@ -123,6 +160,7 @@ export const darkTheme: Theme = {
   },
   fontFamily:
     'system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+  serifFamily: 'Georgia, Cambria, "Times New Roman", Times, serif',
   monoFamily: 'ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace',
   radius: 6,
 };

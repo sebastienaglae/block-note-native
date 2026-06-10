@@ -1,5 +1,5 @@
 /**
- * Minimal ambient types for `react-native` so @bnn/react type-checks without
+ * Minimal ambient types for `react-native` so @sebastienaglae/bnn-react type-checks without
  * pulling in the full React Native types. At runtime this resolves to
  * react-native-web (web) or react-native (native) via the bundler.
  *
@@ -111,4 +111,9 @@ declare module "react-native" {
 
   export const SafeAreaView: ComponentType<ViewProps>;
   export const KeyboardAvoidingView: ComponentType<ViewProps & { behavior?: string }>;
+  export const Modal: ComponentType<
+    ViewProps & { transparent?: boolean; visible?: boolean; animationType?: "none" | "slide" | "fade"; onRequestClose?: () => void }
+  >;
+
+  export const Linking: { openURL(url: string): Promise<unknown>; canOpenURL(url: string): Promise<boolean> };
 }

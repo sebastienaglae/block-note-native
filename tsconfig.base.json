@@ -16,10 +16,10 @@
     "declaration": false,
     "baseUrl": ".",
     "paths": {
-      "@bnn/core": ["packages/core/src/index.ts"],
-      "@bnn/core/*": ["packages/core/src/*"],
-      "@bnn/react": ["packages/react/src/index.ts"],
-      "@bnn/react/*": ["packages/react/src/*"]
+      "@sebastienaglae/bnn-core": ["packages/core/src/index.ts"],
+      "@sebastienaglae/bnn-core/*": ["packages/core/src/*"],
+      "@sebastienaglae/bnn-react": ["packages/react/src/index.ts"],
+      "@sebastienaglae/bnn-react/*": ["packages/react/src/*"]
     }
   }
 }
