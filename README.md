@@ -37,7 +37,7 @@ block-note-native/                 # npm-workspaces monorepo
 │  └─ demo-shared/  @sebastienaglae/bnn-demo-shared ONE definition of demo custom components, used by both apps.
 └─ apps/
    ├─ web/          Vite + React + react-native-web
-   └─ native/       Expo (SDK 52)
+   └─ native/       Expo (SDK 54)
 ```
 
 **The editable surface is the only platform-split file:**

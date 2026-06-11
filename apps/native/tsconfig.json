@@ -8,5 +8,5 @@
       "@sebastienaglae/bnn-demo-shared": ["../../packages/demo-shared/src/index.tsx"]
     }
   },
-  "include": ["App.tsx", "../../packages/react/src/react-native.d.ts"]
+  "include": ["App.tsx", "../../packages/react/src/react-native.d.ts", "../../packages/react/src/global-jsx.d.ts"]
 }
