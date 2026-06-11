@@ -1,5 +1,8 @@
 # BlockNote Native
 
+[![CI](https://github.com/sebastienaglae/block-note-native/actions/workflows/ci.yml/badge.svg)](https://github.com/sebastienaglae/block-note-native/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
+
 A Notion-like, block-based rich-text editor (in the spirit of [BlockNote](https://github.com/TypeCellOS/BlockNote)) that runs on **web** and **React Native** with the **same features**, built from a single shared core. Supports **custom blocks and custom inline content**. No live collaboration (by design).
 
 > BlockNote itself is built on ProseMirror/TipTap, which is DOM-only and cannot run on React Native. This project is a **from-scratch** implementation: a platform-agnostic core plus a thin, per-platform editable surface, so the *same* document model, commands, slash menu, toolbar, drag-to-reorder, and custom components work everywhere.
@@ -57,7 +60,7 @@ Requires Node 18+.
 
 ```bash
 npm install        # installs all workspaces
-npm test           # runs the @sebastienaglae/bnn-core unit tests
+npm test           # runs the unit tests (@sebastienaglae/bnn-core + bnn-react)
 ```
 
 ### Run the web demo (Vite)
@@ -271,6 +274,38 @@ console.log(blocksToMarkdown(editor.document));
 
 ## 🧪 What's verified
 
-- `@sebastienaglae/bnn-core`: 17 unit tests (split/merge/indent, inline mark toggling, markdown round-trip).
+- **38 unit tests** (`npm test`): `@sebastienaglae/bnn-core` covers split/merge/indent/outdent, inline mark toggling, markdown round-trip, block ops, page metadata, comments, and history; `@sebastienaglae/bnn-react` guards the i18n catalog.
 - Web (Vite): rendering, editing, slash menu (+ custom items), formatting toolbar, markdown rules, Tab nesting, persistence — all exercised.
 - Native (Expo): bundles cleanly through Metro in the monorepo and renders the full editor (incl. custom block + mention) via react-native-web; the same shared code path.
+
+---
+
+## 📥 Use it in your own app
+
+The two libraries are published to **GitHub Packages**. Add an `.npmrc` next to your `package.json`:
+
+```
+@sebastienaglae:registry=https://npm.pkg.github.com
+```
+
+```bash
+# Core engine (framework-agnostic)
+npm install @sebastienaglae/bnn-core
+
+# Editor UI (+ peers for your platform)
+npm install @sebastienaglae/bnn-react react
+#   web:    react-dom react-native-web lucide-react
+#   native: react-native lucide-react-native react-native-svg react-native-webview
+```
+
+See the package READMEs — [`@sebastienaglae/bnn-core`](packages/core/README.md) and [`@sebastienaglae/bnn-react`](packages/react/README.md) — for quick-starts. Installing from GitHub Packages requires authenticating `npm` to GitHub (a token with `read:packages`).
+
+---
+
+## 🤝 Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, the workspace layout, day-to-day commands, and the tag-driven release process.
+
+## 📄 License
+
+[MIT](LICENSE) © Sébastien Aglaé

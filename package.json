@@ -3,6 +3,27 @@
   "private": true,
   "version": "0.1.0",
   "description": "Notion-like block editor for Web + React Native (BlockNote-style), built from scratch on a shared platform-agnostic core. No live collaboration; supports custom blocks & inline content.",
+  "license": "MIT",
+  "author": "Sébastien Aglaé",
+  "homepage": "https://github.com/sebastienaglae/block-note-native#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sebastienaglae/block-note-native.git"
+  },
+  "bugs": {
+    "url": "https://github.com/sebastienaglae/block-note-native/issues"
+  },
+  "keywords": [
+    "block-editor",
+    "rich-text",
+    "notion",
+    "blocknote",
+    "react",
+    "react-native",
+    "react-native-web",
+    "wysiwyg",
+    "editor"
+  ],
   "workspaces": [
     "packages/core",
     "packages/react",
