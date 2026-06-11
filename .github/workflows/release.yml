@@ -1,0 +1,53 @@
+name: Release
+
+# Manual versioning system: pick a semver bump (or an explicit version), and this
+# bumps every workspace, runs the suite, commits, and pushes a `vX.Y.Z` tag — which
+# in turn triggers the Publish workflow that releases the packages to GitHub Packages.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version: a bump (patch | minor | major) or an explicit semver like 1.2.0"
+        required: true
+        default: patch
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Compute the next version
+        id: v
+        run: |
+          INPUT="${{ inputs.version }}"
+          CURRENT="$(node -p "require('./packages/core/package.json').version")"
+          if [[ "$INPUT" =~ ^(patch|minor|major)$ ]]; then
+            NEXT="$(npx --yes semver -i "$INPUT" "$CURRENT")"
+          else
+            NEXT="${INPUT#v}"
+          fi
+          echo "version=$NEXT" >> "$GITHUB_OUTPUT"
+          echo "Releasing v$NEXT (from $CURRENT)"
+      - name: Bump workspace versions
+        run: node scripts/set-version.mjs "${{ steps.v.outputs.version }}"
+      - name: Verify the release builds and tests
+        run: |
+          npm test
+          npm run build -w @sebastienaglae/bnn-core
+          npm run build -w @sebastienaglae/bnn-react
+      - name: Commit, tag and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git commit -am "Release v${{ steps.v.outputs.version }}"
+          git tag "v${{ steps.v.outputs.version }}"
+          git push origin HEAD --follow-tags

@@ -89,7 +89,13 @@ export function RichTextInput(props: RichTextInputProps): JSX.Element {
   valueRef.current = inlineToString(content);
 
   useEffect(() => {
-    if (active && editable) inputRef.current?.focus();
+    if (!active || !editable) return;
+    // Focus immediately, then retry once on the next tick: tapping the side-menu
+    // "+" (a non-input view) makes Android start dismissing the keyboard, so the
+    // immediate focus can be dropped — the deferred retry keeps the keyboard up.
+    inputRef.current?.focus();
+    const id = setTimeout(() => inputRef.current?.focus(), 50);
+    return () => clearTimeout(id);
   }, [active, editable]);
 
   const handleChangeText = (next: string) => {

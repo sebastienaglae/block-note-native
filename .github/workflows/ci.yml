@@ -15,14 +15,17 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - name: Unit tests
-        run: npm test -w @sebastienaglae/bnn-core
+      # Build the packages first so the emitted .d.ts files exist: the react /
+      # demo-shared type-checks resolve @sebastienaglae/bnn-core through
+      # node_modules, which points at packages/core/dist.
+      - name: Build packages
+        run: |
+          npm run build -w @sebastienaglae/bnn-core
+          npm run build -w @sebastienaglae/bnn-react
       - name: Type-check
         run: |
           npm run typecheck -w @sebastienaglae/bnn-core
           npm run typecheck -w @sebastienaglae/bnn-react
           npm run typecheck -w @sebastienaglae/bnn-demo-shared
-      - name: Build packages
-        run: |
-          npm run build -w @sebastienaglae/bnn-core
-          npm run build -w @sebastienaglae/bnn-react
+      - name: Unit tests
+        run: npm test

@@ -117,4 +117,16 @@ declare module "react-native" {
   >;
 
   export const Linking: { openURL(url: string): Promise<unknown>; canOpenURL(url: string): Promise<boolean> };
+
+  export const Dimensions: {
+    get(dim: "window" | "screen"): { width: number; height: number; scale: number; fontScale: number };
+  };
+
+  export interface KeyboardEventData {
+    endCoordinates: { height: number; width: number; screenX: number; screenY: number };
+  }
+  export const Keyboard: {
+    addListener(event: string, cb: (e: KeyboardEventData) => void): { remove(): void };
+    dismiss(): void;
+  };
 }

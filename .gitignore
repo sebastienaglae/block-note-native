@@ -15,3 +15,7 @@ apps/native/android/
 apps/native/ios/
 apps/native/dist/
 apps/native/.expo/
+
+# Local debug artifacts (device screenshots / logcat dumps)
+.bnn_shot.png
+.bnn_logcat.txt

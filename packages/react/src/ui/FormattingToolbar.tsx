@@ -11,6 +11,8 @@ export interface FormattingToolbarProps {
   theme: Theme;
   visible: boolean;
   selectionKey: string;
+  /** Native only: keyboard height — the bar floats just above the keyboard (clear of the OS selection menu). */
+  nativeBottom?: number;
 }
 
 const MARKS: Array<{ style: keyof Styles; icon: IconName; key: string; fallback: string }> = [
@@ -21,7 +23,7 @@ const MARKS: Array<{ style: keyof Styles; icon: IconName; key: string; fallback:
   { style: "code", icon: "code", key: "bnn.toolbar.code", fallback: "Code" },
 ];
 
-export function FormattingToolbar({ editor, theme, visible, selectionKey }: FormattingToolbarProps): JSX.Element | null {
+export function FormattingToolbar({ editor, theme, visible, selectionKey, nativeBottom = 0 }: FormattingToolbarProps): JSX.Element | null {
   const t = useT();
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
   const [linkMode, setLinkMode] = useState(false);
@@ -67,10 +69,18 @@ export function FormattingToolbar({ editor, theme, visible, selectionKey }: Form
   // Keep the editor selection alive when interacting with the toolbar (#8).
   const keepSelection = Platform.OS === "web" ? { onMouseDown: (e: { preventDefault: () => void }) => e.preventDefault() } : {};
 
+  // Native: pin the bar just above the keyboard so it stays clear of the OS
+  // copy/cut/paste selection menu (which hugs the selection). Web: over the selection.
   const container =
     Platform.OS === "web"
       ? ({ position: "fixed", top: pos?.top ?? 0, left: pos?.left ?? 0, opacity: pos ? 1 : 0 } as object)
-      : ({ position: "absolute", bottom: 0, left: 0, right: 0 } as object);
+      : ({
+          position: "absolute",
+          bottom: nativeBottom + 6,
+          left: 0,
+          right: 0,
+          alignItems: "center",
+        } as object);
 
   const cardStyle = {
     flexDirection: "row" as const,
@@ -134,7 +144,7 @@ export function FormattingToolbar({ editor, theme, visible, selectionKey }: Form
     <View style={container} {...(keepSelection as object)}>
       <View style={cardStyle}>
         {MARKS.map((m) => (
-          <Btn key={m.style} icon={m.icon} label={t(m.key, m.fallback)} isActive={!!active[m.style]} onPress={() => editor.toggleStyles({ [m.style]: true } as Styles)} />
+          <Btn key={String(m.style)} icon={m.icon} label={t(m.key, m.fallback)} isActive={!!active[m.style]} onPress={() => editor.toggleStyles({ [m.style]: true } as Styles)} />
         ))}
         <View style={{ width: 1, height: 20, backgroundColor: theme.colors.border, marginHorizontal: 2 }} />
         <Btn icon="link" label={t("bnn.toolbar.link", "Link")} onPress={openLink} />

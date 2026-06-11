@@ -1,4 +1,5 @@
 /** Theme tokens shared by every platform. Plain data so it works on web & native. */
+import { Platform } from "react-native";
 
 export interface Theme {
   dark: boolean;
@@ -104,6 +105,14 @@ function hexToRgb(hex: string): [number, number, number] | null {
 /** Returns a copy of `theme` whose body font is the chosen family. */
 export function withFont(theme: Theme, font: "default" | "serif" | "mono" | undefined): Theme {
   if (!font || font === "default") return theme;
+  // React Native needs a single family name, not a web CSS font stack.
+  if (Platform.OS !== "web") {
+    const native =
+      font === "serif"
+        ? Platform.OS === "ios" ? "Georgia" : "serif"
+        : Platform.OS === "ios" ? "Menlo" : "monospace";
+    return { ...theme, fontFamily: native };
+  }
   const fontFamily = font === "serif" ? theme.serifFamily : theme.monoFamily;
   return { ...theme, fontFamily };
 }

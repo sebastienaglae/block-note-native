@@ -110,7 +110,10 @@ export const enLabels = {
   "bnn.header.changeCover": "Change cover",
   "bnn.header.removeCover": "Remove",
   "bnn.header.removeIcon": "Remove",
-  "bnn.header.coverUrl": "Cover image URL (blank for a color)",
+  "bnn.header.coverUrl": "Paste an image URL",
+  "bnn.header.coverColor": "Color",
+  "bnn.header.coverImage": "Image URL",
+  "bnn.header.coverApply": "Add",
 
   // Tree
   "bnn.tree.pages": "Pages",

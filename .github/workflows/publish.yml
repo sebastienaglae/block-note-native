@@ -1,7 +1,8 @@
 name: Publish
 
 # Publishes @sebastienaglae/bnn-core and @sebastienaglae/bnn-react to GitHub
-# Packages when a version tag (e.g. v0.1.0) is pushed.
+# Packages when a version tag (e.g. v0.1.0) is pushed. The package versions are
+# taken from the tag, so the git tag is the single source of truth for releases.
 on:
   push:
     tags: ["v*"]
@@ -10,7 +11,7 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
       packages: write
     steps:
       - uses: actions/checkout@v4
@@ -21,7 +22,9 @@ jobs:
           registry-url: "https://npm.pkg.github.com"
           scope: "@sebastienaglae"
       - run: npm ci
-      - run: npm test -w @sebastienaglae/bnn-core
+      - name: Set package versions from the tag
+        run: node scripts/set-version.mjs "${GITHUB_REF_NAME}"
+      - run: npm test
       - run: npm run build -w @sebastienaglae/bnn-core
       - run: npm run build -w @sebastienaglae/bnn-react
       - name: Publish core
@@ -32,3 +35,7 @@ jobs:
         run: npm publish -w @sebastienaglae/bnn-react
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true

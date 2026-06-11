@@ -30,6 +30,14 @@ interface DndApi {
   setScrollOffset: (y: number) => void;
   /** Offset of the blocks container within the scroll content (e.g. below the page header). */
   setBlocksOffset: (y: number) => void;
+  /**
+   * Top of a block in scroll-viewport coordinates (relative to the ScrollView's
+   * top edge), accounting for the page header and current scroll. Null if the
+   * block hasn't been measured yet. Used to anchor the formatting toolbar.
+   */
+  blockViewportTop: (blockId: string) => number | null;
+  /** Block position within the scroll content (top/height in content coords). Null if unmeasured. */
+  blockContentRect: (blockId: string) => { top: number; height: number } | null;
 }
 
 const DndContext = createContext<DndApi | null>(null);
@@ -127,6 +135,16 @@ export function DndProvider({ editor, topLevelIds, layouts, children }: DndProvi
       },
       setBlocksOffset: (y: number) => {
         blocksOffset.current = y;
+      },
+      blockViewportTop: (blockId: string) => {
+        const l = layouts.current.get(blockId);
+        if (!l) return null;
+        return blocksOffset.current + l.y - scrollOffset.current;
+      },
+      blockContentRect: (blockId: string) => {
+        const l = layouts.current.get(blockId);
+        if (!l) return null;
+        return { top: blocksOffset.current + l.y, height: l.height };
       },
     };
     // `state` intentionally included so consumers re-render with the latest indicator.

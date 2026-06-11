@@ -5,7 +5,7 @@ import {
   ListOrdered, ListChecks, Quote, Code, Minus, Image, Video, Music, Paperclip, Bookmark, MapPin,
   Table, Link, Unlink, Smile, Search, Lock, LockOpen, Undo2, Redo2, Sun, Moon, CaseSensitive,
   ImagePlus, RemoveFormatting, Bold, Italic, Underline, Strikethrough, FileSymlink, Highlighter,
-  Palette, Square, Play, Pause,
+  Palette, Square, Play, Pause, Menu,
 } from "lucide-react-native";
 import type { ComponentType } from "react";
 import type { IconName } from "./iconNames";
@@ -24,7 +24,7 @@ const ICONS: Record<IconName, LucideComp> = {
   lock: Lock, unlock: LockOpen, undo: Undo2, redo: Redo2, sun: Sun, moon: Moon, font: CaseSensitive,
   cover: ImagePlus, removeFormat: RemoveFormatting, bold: Bold, italic: Italic, underline: Underline,
   strike: Strikethrough, pageLink: FileSymlink, highlighter: Highlighter, palette: Palette,
-  play: Play, pause: Pause,
+  play: Play, pause: Pause, menu: Menu,
 };
 
 export interface IconProps {
@@ -39,5 +39,7 @@ export function Icon({ name, size = 16, color = "#000", strokeWidth = 2, fill }:
   const Override = useIconOverride(name);
   if (Override) return <Override size={size} color={color} />;
   const Comp = ICONS[name] ?? Square;
-  return <Comp size={size} color={color} strokeWidth={strokeWidth} fill={fill} />;
+  // lucide icons are stroke-based; passing `fill={undefined}` lets react-native-svg
+  // default the fill to black and flood the glyph. Force "none" unless a fill is asked for.
+  return <Comp size={size} color={color} strokeWidth={strokeWidth} fill={fill ?? "none"} />;
 }

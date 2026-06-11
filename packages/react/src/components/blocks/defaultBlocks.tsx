@@ -20,7 +20,7 @@ const Heading: BlockRenderer = ({ block, InlineContentView }) => {
 
 const BulletListItem: BlockRenderer = ({ theme, InlineContentView }) => (
   <View style={{ flexDirection: "row", alignItems: "flex-start" }}>
-    <Text style={{ fontSize: 16, lineHeight: 24, color: theme.colors.text, width: 24, textAlign: "center" }}>
+    <Text style={{ fontSize: 18, lineHeight: 24, color: theme.colors.accent, width: 24, textAlign: "center" }}>
       •
     </Text>
     <View style={{ flex: 1 }}>{InlineContentView({ textStyle: { fontSize: 16 }, placeholder: "bnn.ph.list" })}</View>
@@ -29,7 +29,7 @@ const BulletListItem: BlockRenderer = ({ theme, InlineContentView }) => (
 
 const NumberedListItem: BlockRenderer = ({ theme, listIndex, InlineContentView }) => (
   <View style={{ flexDirection: "row", alignItems: "flex-start" }}>
-    <Text style={{ fontSize: 16, lineHeight: 24, color: theme.colors.text, minWidth: 24, textAlign: "right", marginRight: 6 }}>
+    <Text style={{ fontSize: 16, lineHeight: 24, color: theme.colors.accent, fontWeight: "600", minWidth: 24, textAlign: "right", marginRight: 6 }}>
       {listIndex ?? 1}.
     </Text>
     <View style={{ flex: 1 }}>{InlineContentView({ textStyle: { fontSize: 16 }, placeholder: "bnn.ph.list" })}</View>
@@ -42,20 +42,21 @@ const CheckListItem: BlockRenderer = ({ block, editor, theme, InlineContentView 
     <View style={{ flexDirection: "row", alignItems: "flex-start" }}>
       <Pressable
         onPress={() => editor.updateBlock(block.id, { props: { checked: !checked } })}
+        hitSlop={6}
         style={{
-          width: 18,
-          height: 18,
+          width: 20,
+          height: 20,
           borderRadius: 4,
-          borderWidth: 1.5,
+          borderWidth: 2,
           borderColor: checked ? theme.colors.accent : theme.colors.border,
           backgroundColor: checked ? theme.colors.accent : "transparent",
           alignItems: "center",
           justifyContent: "center",
           marginRight: 8,
-          marginTop: 3,
+          marginTop: 2,
         }}
       >
-        {checked ? <Icon name="check" size={12} color={theme.colors.onAccent} /> : null}
+        {checked ? <Icon name="check" size={14} color={theme.colors.onAccent} strokeWidth={3} /> : null}
       </Pressable>
       <View style={{ flex: 1, opacity: checked ? 0.55 : 1 }}>
         {InlineContentView({
@@ -72,7 +73,7 @@ const CheckListItem: BlockRenderer = ({ block, editor, theme, InlineContentView 
 
 const Quote: BlockRenderer = ({ theme, InlineContentView }) => (
   <View style={{ flexDirection: "row" }}>
-    <View style={{ width: 3, borderRadius: 2, backgroundColor: theme.colors.quoteBar, marginRight: 12 }} />
+    <View style={{ width: 3, borderRadius: 2, backgroundColor: theme.colors.accent, marginRight: 12 }} />
     <View style={{ flex: 1 }}>
       {InlineContentView({ textStyle: { fontSize: 16, fontStyle: "italic" }, placeholder: "bnn.ph.quote" })}
     </View>

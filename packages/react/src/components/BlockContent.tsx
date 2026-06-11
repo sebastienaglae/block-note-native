@@ -14,6 +14,7 @@ import type { BlockTextStyle, EditableSelection, InlineRenderer } from "../types
 import type { Theme } from "../theme/theme";
 import { RichTextInput } from "../editable/RichTextInput";
 import { useT } from "../i18n/I18nContext";
+import { enLabels, type LabelKey } from "../i18n/labels";
 
 export interface BlockContentProps {
   block: Block;
@@ -30,7 +31,11 @@ export function BlockContent(props: BlockContentProps): JSX.Element {
   const { block, editor, theme, active, selection, textStyle, placeholder, inlineRenderers } = props;
   const t = useT();
   // `placeholder` may be an i18n key (default blocks) or a raw string (custom blocks).
-  const resolvedPlaceholder = placeholder ? t(placeholder, placeholder) : undefined;
+  // Use the English catalog as the fallback so default blocks read correctly even
+  // when no translate function is supplied (otherwise the raw key would show).
+  const resolvedPlaceholder = placeholder
+    ? t(placeholder, enLabels[placeholder as LabelKey] ?? placeholder)
+    : undefined;
   const content = block.content ?? [];
 
   const renderCustomInline = (ic: CustomInlineContent) => {

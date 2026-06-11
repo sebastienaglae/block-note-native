@@ -59,6 +59,7 @@ export const ICON_LUCIDE = {
   plus: "Plus",
   play: "Play",
   pause: "Pause",
+  menu: "Menu",
 } as const;
 
 export type IconName = keyof typeof ICON_LUCIDE;

@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { PanResponder, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import type { Theme } from "../theme/theme";
 import { Icon } from "../icons/Icon";
@@ -80,6 +80,12 @@ interface DragState {
 function PageTreeInner(props: PageTreeProps): JSX.Element {
   const { pages, activeId, theme, onSelect, onAddChild, onRename, onRemove, onToggleFavorite, onMove } = props;
   const t = useT();
+  // Slightly larger, finger-friendly hit targets on touch platforms.
+  const big = Platform.OS !== "web";
+  const ROW_H = big ? 40 : 30;
+  const BTN = big ? 30 : 22;
+  const BTN_ICON = big ? 17 : 14;
+  const FONT = big ? 15 : 14;
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set(pages.map((p) => p.id)));
   const [hovered, setHovered] = useState<string | null>(null);
   const [menu, setMenu] = useState<{ id: string; top: number; left: number } | null>(null);
@@ -97,6 +103,14 @@ function PageTreeInner(props: PageTreeProps): JSX.Element {
   const responders = useRef<Map<string, ReturnType<typeof PanResponder.create>>>(new Map());
   const moreRefs = useRef<Map<string, Measurable>>(new Map());
   const lastTap = useRef<{ id: string; time: number }>({ id: "", time: 0 });
+  const renameRef = useRef<{ focus?: () => void } | null>(null);
+
+  // When a rename starts, focus the field so the keyboard opens right away.
+  useEffect(() => {
+    if (!renaming) return;
+    const id = setTimeout(() => renameRef.current?.focus?.(), 50);
+    return () => clearTimeout(id);
+  }, [renaming]);
 
   const all = flattenAll(pages);
   const visible = flattenVisible(pages, expanded);
@@ -172,7 +186,9 @@ function PageTreeInner(props: PageTreeProps): JSX.Element {
   };
   const openMenu = (id: string) => {
     const node = moreRefs.current.get(id);
-    if (node?.measureInWindow) node.measureInWindow((x, y, _w, h) => setMenu({ id, top: y + h + 4, left: Math.max(8, x - 120) }));
+    const menuW = big ? 264 : 220;
+    // Right-align the menu to the button so the wider mobile menu stays on-screen.
+    if (node?.measureInWindow) node.measureInWindow((x, y, w, h) => setMenu({ id, top: y + h + 4, left: Math.max(8, x + w - menuW) }));
     else setMenu({ id, top: 120, left: 80 });
     setMoveFor(null);
   };
@@ -182,25 +198,26 @@ function PageTreeInner(props: PageTreeProps): JSX.Element {
       ref={innerRef as never}
       onPress={onPress}
       accessibilityLabel={label}
-      style={({ hovered: h }: { hovered?: boolean }) => ({ width: 22, height: 22, borderRadius: 4, alignItems: "center", justifyContent: "center", backgroundColor: h ? theme.colors.border : "transparent" })}
+      hitSlop={big ? 6 : 0}
+      style={({ hovered: h }: { hovered?: boolean }) => ({ width: BTN, height: BTN, borderRadius: 6, alignItems: "center", justifyContent: "center", backgroundColor: h ? theme.colors.border : "transparent" })}
     >
-      <Icon name={name} size={14} color={fill ? theme.colors.accent : theme.colors.textSecondary} fill={fill} />
+      <Icon name={name} size={BTN_ICON} color={fill ? theme.colors.accent : theme.colors.textSecondary} fill={fill} />
     </Pressable>
   );
 
   const MenuRow = ({ icon, label, onPress, danger, fill }: { icon: IconName; label: string; onPress: () => void; danger?: boolean; fill?: string }) => (
-    <Pressable onPress={onPress} style={({ hovered: h }: { hovered?: boolean }) => ({ flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 10, paddingVertical: 7, borderRadius: 5, backgroundColor: h ? theme.colors.menuHover : "transparent" })}>
-      <Icon name={icon} size={14} color={danger ? "#e03e3e" : fill ? theme.colors.accent : theme.colors.textSecondary} fill={fill} />
-      <Text style={{ color: danger ? "#e03e3e" : theme.colors.text, fontSize: 13 }}>{label}</Text>
+    <Pressable onPress={onPress} style={({ hovered: h }: { hovered?: boolean }) => ({ flexDirection: "row", alignItems: "center", gap: big ? 12 : 8, paddingHorizontal: big ? 14 : 10, paddingVertical: big ? 12 : 7, borderRadius: 6, backgroundColor: h ? theme.colors.menuHover : "transparent" })}>
+      <Icon name={icon} size={big ? 18 : 14} color={danger ? "#e03e3e" : fill ? theme.colors.accent : theme.colors.textSecondary} fill={fill} />
+      <Text style={{ color: danger ? "#e03e3e" : theme.colors.text, fontSize: big ? 15 : 13 }}>{label}</Text>
     </Pressable>
   );
 
   const PageIcon = ({ node }: { node: PageNode }) =>
     node.icon ? (
-      <Text style={{ fontSize: 14, width: 18, textAlign: "center" }}>{node.icon}</Text>
+      <Text style={{ fontSize: big ? 18 : 14, width: big ? 24 : 18, textAlign: "center" }}>{node.icon}</Text>
     ) : (
-      <View style={{ width: 18, alignItems: "center" }}>
-        <Icon name="page" size={15} color={theme.colors.textSecondary} />
+      <View style={{ width: big ? 24 : 18, alignItems: "center" }}>
+        <Icon name="page" size={big ? 19 : 15} color={theme.colors.textSecondary} />
       </View>
     );
 
@@ -224,32 +241,32 @@ function PageTreeInner(props: PageTreeProps): JSX.Element {
           style={{
             flexDirection: "row",
             alignItems: "center",
-            height: 30,
-            paddingRight: 6,
-            paddingLeft: 6 + depth * 14,
-            borderRadius: 5,
+            height: ROW_H,
+            paddingRight: big ? 8 : 6,
+            paddingLeft: (big ? 8 : 6) + depth * (big ? 16 : 14),
+            borderRadius: 6,
             opacity: drag.id === node.id ? 0.4 : 1,
             cursor: "grab",
             backgroundColor: isDropInside ? theme.colors.accentSoft : isActive ? theme.colors.accentSoft : isHover ? theme.colors.menuHover : "transparent",
           }}
         >
-          <Pressable onPress={() => (hasChildren ? toggleExpand(node.id) : undefined)} style={{ width: 16, height: 16, alignItems: "center", justifyContent: "center" }}>
-            {hasChildren ? <Icon name={isOpen ? "chevronDown" : "chevronRight"} size={12} color={theme.colors.textSecondary} /> : null}
+          <Pressable onPress={() => (hasChildren ? toggleExpand(node.id) : undefined)} hitSlop={big ? 6 : 0} style={{ width: big ? 30 : 16, height: ROW_H, alignItems: "center", justifyContent: "center" }}>
+            {hasChildren ? <Icon name={isOpen ? "chevronDown" : "chevronRight"} size={big ? 17 : 12} color={theme.colors.textSecondary} /> : null}
           </Pressable>
-          <Pressable onPress={() => onRowPress(node)} style={{ flex: 1, flexDirection: "row", alignItems: "center", height: 30 }}>
-            <View style={{ marginRight: 4 }}>
+          <Pressable onPress={() => onRowPress(node)} style={{ flex: 1, flexDirection: "row", alignItems: "center", height: ROW_H }}>
+            <View style={{ marginRight: big ? 8 : 4 }}>
               <PageIcon node={node} />
             </View>
             {renaming === node.id ? (
-              <TextInput value={draft} onChangeText={setDraft} onBlur={() => commitRename(node.id)} autoFocus style={{ flex: 1, color: theme.colors.text, fontSize: 14, padding: 0, borderBottomWidth: 1, borderColor: theme.colors.accent }} />
+              <TextInput ref={renameRef as never} value={draft} onChangeText={setDraft} onBlur={() => commitRename(node.id)} autoFocus style={{ flex: 1, color: theme.colors.text, fontSize: FONT, padding: 0, borderBottomWidth: 1, borderColor: theme.colors.accent }} />
             ) : (
-              <Text numberOfLines={1} style={{ flex: 1, fontSize: 14, color: isActive ? theme.colors.accent : theme.colors.text }}>
+              <Text numberOfLines={1} style={{ flex: 1, fontSize: FONT, color: isActive ? theme.colors.accent : theme.colors.text }}>
                 {node.title || t("bnn.tree.untitled", "Untitled")}
               </Text>
             )}
           </Pressable>
-          {node.favorite ? <Icon name="star" size={12} color={theme.colors.accent} fill={theme.colors.accent} /> : null}
-          <View style={{ flexDirection: "row", width: 44, justifyContent: "flex-end", opacity: actionsShown ? 1 : 0 }} pointerEvents={actionsShown ? "auto" : "none"}>
+          {node.favorite ? <Icon name="star" size={big ? 15 : 12} color={theme.colors.accent} fill={theme.colors.accent} /> : null}
+          <View style={{ flexDirection: "row", gap: big ? 4 : 0, width: big ? 70 : 44, justifyContent: "flex-end", opacity: actionsShown ? 1 : 0 }} pointerEvents={actionsShown ? "auto" : "none"}>
             <IconBtn name="more" label={t("bnn.tree.options", "Options")} innerRef={(n) => n && moreRefs.current.set(node.id, n)} onPress={() => openMenu(node.id)} />
             <IconBtn name="add" label={t("bnn.tree.addChild", "Add a page inside")} onPress={() => { onAddChild(node.id); setExpanded((s) => new Set(s).add(node.id)); }} />
           </View>
@@ -265,9 +282,9 @@ function PageTreeInner(props: PageTreeProps): JSX.Element {
     <View style={{ width: props.width ?? 260, backgroundColor: theme.colors.backgroundSecondary, borderRightWidth: 1, borderRightColor: theme.colors.border }}>
       <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 12, paddingVertical: 10 }}>
         <Text style={{ flex: 1, fontSize: 12, fontWeight: "700", color: theme.colors.textSecondary, textTransform: "uppercase" }}>{t("bnn.tree.pages", "Pages")}</Text>
-        <Pressable onPress={() => onAddChild(null)} style={({ hovered: h }: { hovered?: boolean }) => ({ flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 5, backgroundColor: h ? theme.colors.menuHover : "transparent" })}>
-          <Icon name="add" size={14} color={theme.colors.textSecondary} />
-          <Text style={{ color: theme.colors.textSecondary, fontSize: 12 }}>{t("bnn.tree.new", "New page")}</Text>
+        <Pressable onPress={() => onAddChild(null)} hitSlop={big ? 6 : 0} style={({ hovered: h }: { hovered?: boolean }) => ({ flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: big ? 12 : 8, paddingVertical: big ? 8 : 4, borderRadius: 6, backgroundColor: h ? theme.colors.menuHover : "transparent" })}>
+          <Icon name="add" size={big ? 18 : 14} color={theme.colors.textSecondary} />
+          <Text style={{ color: theme.colors.textSecondary, fontSize: big ? 14 : 12 }}>{t("bnn.tree.new", "New page")}</Text>
         </Pressable>
       </View>
 
@@ -276,10 +293,10 @@ function PageTreeInner(props: PageTreeProps): JSX.Element {
           <View style={{ marginBottom: 8 }}>
             <Text style={{ fontSize: 10, fontWeight: "700", color: theme.colors.textSecondary, paddingHorizontal: 8, paddingVertical: 4, textTransform: "uppercase" }}>{t("bnn.tree.favorites", "Favorites")}</Text>
             {favorites.map((node) => (
-              <View key={`fav-${node.id}`} style={{ flexDirection: "row", alignItems: "center", height: 28, paddingHorizontal: 8, borderRadius: 5 }}>
-                <Pressable onPress={() => onSelect(node.id)} style={{ flexDirection: "row", alignItems: "center", flex: 1 }}>
-                  <View style={{ marginRight: 6 }}><PageIcon node={node} /></View>
-                  <Text numberOfLines={1} style={{ flex: 1, fontSize: 14, color: theme.colors.text }}>{node.title || t("bnn.tree.untitled", "Untitled")}</Text>
+              <View key={`fav-${node.id}`} style={{ flexDirection: "row", alignItems: "center", height: big ? 42 : 28, paddingHorizontal: 8, borderRadius: 6 }}>
+                <Pressable onPress={() => onSelect(node.id)} style={{ flexDirection: "row", alignItems: "center", flex: 1, height: big ? 42 : 28 }}>
+                  <View style={{ marginRight: big ? 8 : 6 }}><PageIcon node={node} /></View>
+                  <Text numberOfLines={1} style={{ flex: 1, fontSize: FONT, color: theme.colors.text }}>{node.title || t("bnn.tree.untitled", "Untitled")}</Text>
                 </Pressable>
                 <IconBtn name="star" fill={theme.colors.accent} label={t("bnn.tree.removeFavorite", "Remove from favorites")} onPress={() => onToggleFavorite(node.id)} />
               </View>
@@ -292,7 +309,7 @@ function PageTreeInner(props: PageTreeProps): JSX.Element {
       {/* Context menu in a portal overlay: doesn't shift the list, closes on outside click (#3) */}
       {menu && menuNode ? (
         <Overlay top={menu.top} left={menu.left} onClose={() => setMenu(null)}>
-          <View style={{ width: 220, backgroundColor: theme.colors.menuBackground, borderRadius: 6, borderWidth: 1, borderColor: theme.colors.border, paddingVertical: 4, shadowColor: "#000", shadowOpacity: 0.18, shadowRadius: 16, shadowOffset: { width: 0, height: 6 } }}>
+          <View style={{ width: big ? 264 : 220, backgroundColor: theme.colors.menuBackground, borderRadius: 8, borderWidth: 1, borderColor: theme.colors.border, paddingVertical: big ? 6 : 4, shadowColor: "#000", shadowOpacity: 0.18, shadowRadius: 16, shadowOffset: { width: 0, height: 6 }, elevation: 8 }}>
             <MenuRow icon="star" fill={menuNode.favorite ? theme.colors.accent : undefined} label={menuNode.favorite ? t("bnn.tree.removeFavorite", "Remove from favorites") : t("bnn.tree.addFavorite", "Add to favorites")} onPress={() => { onToggleFavorite(menu.id); setMenu(null); }} />
             <MenuRow icon="rename" label={t("bnn.tree.rename", "Rename")} onPress={() => startRename(menuNode)} />
             <MenuRow icon="move" label={t("bnn.tree.move", "Move to…")} onPress={() => setMoveFor((m) => (m === menu.id ? null : menu.id))} />

@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { Platform, ScrollView, View } from "react-native";
+import { Keyboard, Platform, ScrollView, View } from "react-native";
 import {
   inlineToString,
   spliceInline,
@@ -148,8 +148,29 @@ function EditorContent({
   const [dismissedKey, setDismissedKey] = useState<string | null>(null);
   const [slashPos, setSlashPos] = useState<{ top: number; left: number } | null>(null);
   const [emoji, setEmoji] = useState<{ top: number; left: number } | null>(null);
+  const [kbHeight, setKbHeight] = useState(0);
+  const viewportH = useRef(0);
+  const scrollY = useRef(0);
 
   const sel = editor.selection;
+
+  // Track the on-screen keyboard height (native) so we can pad + scroll the
+  // focused block into view; on web these listeners never fire.
+  useEffect(() => {
+    if (Platform.OS === "web") return;
+    const show = Keyboard.addListener("keyboardDidShow", (e) => setKbHeight(e.endCoordinates?.height ?? 0));
+    const hide = Keyboard.addListener("keyboardDidHide", () => {
+      setKbHeight(0);
+      // Collapse a range selection so both our toolbar and Android's own
+      // copy/paste selection bar go away when editing ends.
+      const s = editor.selection;
+      if (s && s.start !== s.end) editor.setSelection({ blockId: s.blockId, start: s.end, end: s.end });
+    });
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, [editor]);
 
   // Derive slash-menu state from the current selection.
   let slash: { query: string; start: number; blockId: string } | null = null;
@@ -188,6 +209,8 @@ function EditorContent({
   };
 
   useLayoutEffect(() => {
+    // Native has no DOM window/addEventListener; the menu uses absolute positioning.
+    if (Platform.OS !== "web") return;
     if (!slashVisible) {
       setSlashPos(null);
       return;
@@ -280,8 +303,31 @@ function EditorContent({
     return () => document.removeEventListener("keydown", handler, true);
   }, [editor]);
 
+  // Native: when the keyboard is open, scroll the focused block into the visible
+  // area above it so you can always see what you're typing (incl. the last block).
+  useEffect(() => {
+    if (Platform.OS === "web" || !sel || kbHeight === 0 || viewportH.current === 0) return;
+    const rect = dnd.blockContentRect(sel.blockId);
+    if (!rect) return;
+    const margin = 16;
+    const visibleBottom = scrollY.current + viewportH.current - kbHeight - margin;
+    const blockBottom = rect.top + rect.height;
+    if (blockBottom > visibleBottom) {
+      scrollRef.current?.scrollTo({ y: blockBottom - (viewportH.current - kbHeight) + margin, animated: true });
+    } else if (rect.top < scrollY.current + margin) {
+      scrollRef.current?.scrollTo({ y: Math.max(0, rect.top - margin), animated: true });
+    }
+  }, [sel?.blockId, sel?.start, sel?.end, kbHeight, dnd]);
+
+  // On native the bar lives above the keyboard, so hide it once the keyboard is
+  // dismissed (otherwise it lingers with no way to tap it away).
   const toolbarVisible =
-    !!sel && sel.start !== sel.end && !slashVisible && sel.blockId !== TITLE_BLOCK_ID && !editor.locked;
+    !!sel &&
+    sel.start !== sel.end &&
+    !slashVisible &&
+    sel.blockId !== TITLE_BLOCK_ID &&
+    !editor.locked &&
+    (Platform.OS === "web" || kbHeight > 0);
   const selectionKey = sel ? `${sel.blockId}:${sel.start}:${sel.end}` : "none";
 
   let counter = 0;
@@ -293,13 +339,18 @@ function EditorContent({
           ref={scrollRef}
           style={{ flex: 1 }}
           keyboardShouldPersistTaps="handled"
-          onScroll={(e) => dnd.setScrollOffset(e.nativeEvent.contentOffset.y)}
+          keyboardDismissMode="on-drag"
+          onScroll={(e) => {
+            scrollY.current = e.nativeEvent.contentOffset.y;
+            dnd.setScrollOffset(e.nativeEvent.contentOffset.y);
+          }}
           scrollEventThrottle={16}
-          onLayout={() => {
+          onLayout={(e) => {
+            viewportH.current = e.nativeEvent.layout.height;
             const node = scrollRef.current as { measureInWindow?: (cb: (x: number, y: number) => void) => void } | null;
             node?.measureInWindow?.((_x, y) => dnd.setContainerOffset(y));
           }}
-          contentContainerStyle={{ paddingBottom: 80 }}
+          contentContainerStyle={{ paddingBottom: 24 + kbHeight }}
         >
           {showPageHeader ? <PageHeader editor={editor} theme={theme} locked={editor.locked} /> : null}
           <View
@@ -338,16 +389,24 @@ function EditorContent({
         ) : null}
       </View>
 
-      <FormattingToolbar editor={editor} theme={theme} visible={toolbarVisible} selectionKey={selectionKey} />
-      <SlashMenu
+      <FormattingToolbar
+        editor={editor}
         theme={theme}
-        items={filtered}
-        activeIndex={activeIndex}
-        position={slashPos}
-        query={slash?.query ?? ""}
-        onSelect={selectItem}
-        onHover={setActiveIndex}
+        visible={toolbarVisible}
+        selectionKey={selectionKey}
+        nativeBottom={kbHeight}
       />
+      {slashVisible ? (
+        <SlashMenu
+          theme={theme}
+          items={filtered}
+          activeIndex={activeIndex}
+          position={slashPos}
+          query={slash?.query ?? ""}
+          onSelect={selectItem}
+          onHover={setActiveIndex}
+        />
+      ) : null}
       {emoji ? (
         <View
           style={

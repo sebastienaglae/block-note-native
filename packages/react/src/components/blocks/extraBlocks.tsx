@@ -4,7 +4,8 @@ import type { BlockRenderer } from "../../types";
 import type { Theme } from "../../theme/theme";
 import { Icon } from "../../icons/Icon";
 import { Embed } from "./Embed";
-import { AudioPlayer, MapEmbed, MediaEmpty, hostOf, openUrl, videoEmbed } from "./mediaParts";
+import { AudioPlayer } from "./AudioPlayer";
+import { MOBILE_UA, MapEmbed, MediaEmpty, hostOf, openUrl, videoEmbed } from "./mediaParts";
 
 function Triangle({ collapsed, theme, onPress }: { collapsed: boolean; theme: Theme; onPress: () => void }) {
   return (
@@ -20,7 +21,7 @@ function Triangle({ collapsed, theme, onPress }: { collapsed: boolean; theme: Th
         cursor: "pointer",
       })}
     >
-      <Icon name={collapsed ? "chevronRight" : "chevronDown"} size={14} color={theme.colors.textSecondary} />
+      <Icon name={collapsed ? "chevronRight" : "chevronDown"} size={15} color={theme.colors.accent} />
     </Pressable>
   );
 }
@@ -56,15 +57,14 @@ const VideoBlock: BlockRenderer = ({ block, editor, theme }) => {
     if (embed) return <Embed src={embed} title="video" height={340} />;
     return <video src={url} controls style={{ width: "100%", borderRadius: 8, backgroundColor: "#000" }} />;
   }
-  return <Embed src={embed || url} title="video" height={240} />;
+  return <Embed src={embed || url} title="video" height={240} userAgent={embed ? MOBILE_UA : undefined} />;
 };
 
 const AudioBlock: BlockRenderer = ({ block, editor, theme }) => {
   const url = String(block.props.url || "");
   if (!url)
     return <MediaEmpty editor={editor} blockId={block.id} propKey="url" icon="audio" theme={theme} labelKey="bnn.media.addAudio" labelFallback="Add an audio file" phKey="bnn.media.urlAudio" phFallback="Audio URL" />;
-  if (Platform.OS === "web") return <AudioPlayer url={url} theme={theme} />;
-  return <Embed src={url} title="audio" height={90} />;
+  return <AudioPlayer url={url} theme={theme} />;
 };
 
 const FileBlock: BlockRenderer = ({ block, editor, theme }) => {

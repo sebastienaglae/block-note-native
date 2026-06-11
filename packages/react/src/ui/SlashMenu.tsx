@@ -30,10 +30,10 @@ export function SlashMenu(props: SlashMenuProps): JSX.Element | null {
   const t = useT();
   if (!position && Platform.OS === "web") return null;
 
-  const containerStyle =
-    Platform.OS === "web"
-      ? ({ position: "fixed" as const, top: position?.top ?? 0, left: position?.left ?? 0 } as object)
-      : ({ position: "absolute" as const, top: 40, left: 16, right: 16 } as object);
+  const isWeb = Platform.OS === "web";
+  const containerStyle = isWeb
+    ? ({ position: "fixed" as const, top: position?.top ?? 0, left: position?.left ?? 0, width: 280 } as object)
+    : ({ position: "absolute" as const, top: 40, left: 12, right: 12 } as object);
 
   let lastGroup: string | undefined;
 
@@ -42,7 +42,6 @@ export function SlashMenu(props: SlashMenuProps): JSX.Element | null {
       style={[
         containerStyle,
         {
-          width: 280,
           maxHeight: 360,
           backgroundColor: theme.colors.menuBackground,
           borderRadius: theme.radius + 2,
@@ -107,7 +106,7 @@ export function SlashMenu(props: SlashMenuProps): JSX.Element | null {
                   {item.emoji ? (
                     <Text style={{ fontSize: 16 }}>{item.emoji}</Text>
                   ) : (
-                    <Icon name={(item.icon as IconName) ?? "text"} size={17} color={theme.colors.text} />
+                    <Icon name={(item.icon as IconName) ?? "text"} size={17} color={theme.colors.accent} />
                   )}
                 </View>
                 <View style={{ flex: 1 }}>

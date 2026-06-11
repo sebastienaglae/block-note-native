@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Image, Platform, Pressable, Text, View } from "react-native";
+import { Dimensions, Image, Platform, Pressable, Text, TextInput, View } from "react-native";
 import { TITLE_BLOCK_ID, type Editor } from "@sebastienaglae/bnn-core";
 import type { Theme } from "../theme/theme";
 import { RichTextInput } from "../editable/RichTextInput";
@@ -32,9 +32,12 @@ export function PageHeader({ editor, theme, locked }: PageHeaderProps): JSX.Elem
   const t = useT();
   const [hover, setHover] = useState(false);
   const [picker, setPicker] = useState<{ top: number; left: number } | null>(null);
-  const [coverIdx, setCoverIdx] = useState(0);
+  const [coverPick, setCoverPick] = useState<{ top: number; left: number } | null>(null);
+  const [coverUrl, setCoverUrl] = useState("");
   const iconRef = useRef<Measurable | null>(null);
   const addIconRef = useRef<Measurable | null>(null);
+  const addCoverRef = useRef<Measurable | null>(null);
+  const changeCoverRef = useRef<Measurable | null>(null);
 
   const showControls = !locked && (Platform.OS !== "web" || hover);
   const webHover =
@@ -51,20 +54,22 @@ export function PageHeader({ editor, theme, locked }: PageHeaderProps): JSX.Elem
     }
   };
 
-  const addCover = () => {
-    const next = COVER_COLORS[coverIdx % COVER_COLORS.length];
-    setCoverIdx((i) => i + 1);
-    editor.setPageCover(next);
+  // Opens the cover picker (color swatches + image URL) anchored under the button,
+  // clamped so the 268px-wide popover never spills off either screen edge.
+  const COVER_PICKER_W = 268;
+  const openCoverPicker = (node: Measurable | null) => {
+    if (locked) return;
+    setCoverUrl("");
+    const screenW = Dimensions.get("window").width;
+    const clampLeft = (x: number) => Math.max(8, Math.min(x, screenW - COVER_PICKER_W - 8));
+    if (node?.measureInWindow) node.measureInWindow((x, y, _w, h) => setCoverPick({ top: y + h + 6, left: clampLeft(x) }));
+    else setCoverPick({ top: 120, left: clampLeft(90) });
   };
-  const changeCover = () => {
-    if (Platform.OS === "web") {
-      const url = window.prompt?.(t("bnn.header.coverUrl", "Cover image URL (blank for a color)"), "");
-      if (url) {
-        editor.setPageCover(url);
-        return;
-      }
-    }
-    addCover();
+  const applyCoverUrl = () => {
+    const v = coverUrl.trim();
+    if (v) editor.setPageCover(v);
+    setCoverPick(null);
+    setCoverUrl("");
   };
 
   const ControlButton = ({
@@ -125,7 +130,7 @@ export function PageHeader({ editor, theme, locked }: PageHeaderProps): JSX.Elem
                 zIndex: 20,
               }}
             >
-              <ControlButton icon="cover" label={t("bnn.header.changeCover", "Change cover")} onPress={changeCover} />
+              <ControlButton icon="cover" label={t("bnn.header.changeCover", "Change cover")} innerRef={changeCoverRef} onPress={() => openCoverPicker(changeCoverRef.current)} />
               <ControlButton icon="close" label={t("bnn.header.removeCover", "Remove")} onPress={() => editor.setPageCover(null)} />
             </View>
           ) : null}
@@ -166,7 +171,11 @@ export function PageHeader({ editor, theme, locked }: PageHeaderProps): JSX.Elem
                     <ControlButton icon="emoji" label={t("bnn.header.addIcon", "Add icon")} onPress={() => openPicker(addIconRef.current)} />
                   </View>
                 ) : null}
-                {!meta.cover ? <ControlButton icon="cover" label={t("bnn.header.addCover", "Add cover")} onPress={addCover} /> : null}
+                {!meta.cover ? (
+                  <View ref={addCoverRef as never}>
+                    <ControlButton icon="cover" label={t("bnn.header.addCover", "Add cover")} onPress={() => openCoverPicker(addCoverRef.current)} />
+                  </View>
+                ) : null}
               </View>
             </View>
           ) : null}
@@ -215,6 +224,61 @@ export function PageHeader({ editor, theme, locked }: PageHeaderProps): JSX.Elem
                 : undefined
             }
           />
+        </Overlay>
+      ) : null}
+
+      {/* Cover picker: pick a solid color or paste an image URL (#cover) */}
+      {coverPick && !locked ? (
+        <Overlay top={coverPick.top} left={coverPick.left} onClose={() => setCoverPick(null)}>
+          <View
+            style={{
+              width: 268,
+              backgroundColor: theme.colors.menuBackground,
+              borderRadius: 8,
+              borderWidth: 1,
+              borderColor: theme.colors.border,
+              padding: 12,
+              gap: 8,
+              shadowColor: "#000",
+              shadowOpacity: 0.18,
+              shadowRadius: 16,
+              shadowOffset: { width: 0, height: 6 },
+              elevation: 8,
+            }}
+          >
+            <Text style={{ fontSize: 10, fontWeight: "700", color: theme.colors.textSecondary, textTransform: "uppercase" }}>
+              {t("bnn.header.coverColor", "Color")}
+            </Text>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+              {COVER_COLORS.map((c) => (
+                <Pressable
+                  key={c}
+                  onPress={() => {
+                    editor.setPageCover(c);
+                    setCoverPick(null);
+                  }}
+                  style={{ width: 32, height: 26, borderRadius: 5, backgroundColor: c, borderWidth: 1, borderColor: theme.colors.border }}
+                />
+              ))}
+            </View>
+            <Text style={{ fontSize: 10, fontWeight: "700", color: theme.colors.textSecondary, textTransform: "uppercase", marginTop: 2 }}>
+              {t("bnn.header.coverImage", "Image URL")}
+            </Text>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+              <TextInput
+                value={coverUrl}
+                onChangeText={setCoverUrl}
+                autoFocus
+                placeholder={t("bnn.header.coverUrl", "Paste an image URL")}
+                placeholderTextColor={theme.colors.placeholder}
+                onSubmitEditing={applyCoverUrl}
+                style={{ flex: 1, borderWidth: 1, borderColor: theme.colors.border, borderRadius: 5, paddingHorizontal: 8, paddingVertical: 6, color: theme.colors.text, fontSize: 13 }}
+              />
+              <Pressable onPress={applyCoverUrl} style={{ backgroundColor: theme.colors.accent, borderRadius: 5, paddingHorizontal: 12, paddingVertical: 7 }}>
+                <Text style={{ color: theme.colors.onAccent, fontSize: 13, fontWeight: "600" }}>{t("bnn.header.coverApply", "Add")}</Text>
+              </Pressable>
+            </View>
+          </View>
         </Overlay>
       ) : null}
     </View>
