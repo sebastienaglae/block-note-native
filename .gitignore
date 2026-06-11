@@ -9,3 +9,9 @@ coverage/
 .DS_Store
 .vite/
 *.tsbuildinfo
+
+# Expo prebuild (continuous native generation) output
+apps/native/android/
+apps/native/ios/
+apps/native/dist/
+apps/native/.expo/

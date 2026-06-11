@@ -6,8 +6,15 @@
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "platforms": ["ios", "android", "web"],
+    "android": {
+      "package": "com.sebastienaglae.bnnnative"
+    },
+    "ios": {
+      "bundleIdentifier": "com.sebastienaglae.bnnnative"
+    },
     "web": {
       "bundler": "metro"
-    }
+    },
+    "plugins": ["./plugins/withMonorepoGradleRoot.js"]
   }
 }
