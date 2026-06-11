@@ -8,12 +8,12 @@
 import { useEffect, useRef } from "react";
 import { Text, TextInput, View } from "react-native";
 import {
+  icText,
   inlineToString,
   isLink,
   isStyledText,
   spliceInline,
   stylesAt,
-  type CustomInlineContent,
   type InlineContent,
   type Styles,
 } from "@sebastienaglae/bnn-core";
@@ -75,7 +75,6 @@ export function RichTextInput(props: RichTextInputProps): JSX.Element {
     editable = true,
     textStyle,
     theme,
-    renderCustomInline,
     onChange,
     onSelectionChange,
     onFocus,
@@ -132,8 +131,12 @@ export function RichTextInput(props: RichTextInputProps): JSX.Element {
           </Text>
         );
       }
+      // Custom inline content must render as text inside a TextInput on native
+      // (a View nested in Text crashes Android). Show its visible text, accented.
       return (
-        <Text key={i}>{renderCustomInline ? renderCustomInline(ic as CustomInlineContent) : null}</Text>
+        <Text key={i} style={{ color: theme.colors.accent, fontWeight: "600" }}>
+          {icText(ic)}
+        </Text>
       );
     });
   };
