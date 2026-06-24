@@ -1,7 +1,7 @@
 /** Web icon (lucide-react). Static imports so only used icons are bundled (tree-shaking). */
 import {
   Plus, GripVertical, ChevronRight, ChevronDown, FileText, MoreHorizontal, Star, Trash2, Pencil,
-  CornerUpRight, Folder, MessageSquare, Check, X, Send, Type, Heading1, Heading2, Heading3, List,
+  CornerUpRight, Folder, Copy, Check, X, Send, Type, Heading1, Heading2, Heading3, List,
   ListOrdered, ListChecks, Quote, Code, Minus, Image, Video, Music, Paperclip, Bookmark, MapPin,
   Table, Link, Unlink, Smile, Search, Lock, LockOpen, Undo2, Redo2, Sun, Moon, CaseSensitive,
   ImagePlus, RemoveFormatting, Bold, Italic, Underline, Strikethrough, FileSymlink, Highlighter,
@@ -17,7 +17,7 @@ type LucideComp = ComponentType<any>;
 const ICONS: Record<IconName, LucideComp> = {
   add: Plus, plus: Plus, drag: GripVertical, chevronRight: ChevronRight, chevronDown: ChevronDown,
   page: FileText, more: MoreHorizontal, star: Star, trash: Trash2, rename: Pencil, move: CornerUpRight,
-  folder: Folder, comment: MessageSquare, check: Check, close: X, send: Send, text: Type, h1: Heading1,
+  folder: Folder, copy: Copy, check: Check, close: X, send: Send, text: Type, h1: Heading1,
   h2: Heading2, h3: Heading3, bulletList: List, numberedList: ListOrdered, checkList: ListChecks,
   quote: Quote, code: Code, divider: Minus, image: Image, video: Video, audio: Music, file: Paperclip,
   bookmark: Bookmark, map: MapPin, table: Table, link: Link, unlink: Unlink, emoji: Smile, search: Search,

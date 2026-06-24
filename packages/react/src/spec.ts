@@ -13,9 +13,25 @@
  *   const { blockSpecs, inlineSpecs, blockRenderers, inlineRenderers, slashItems } =
  *     createBlockNoteSchema({ blockSpecs: [Callout], inlineSpecs: [Mention] });
  */
-import type { BlockConfig, InlineContentConfig } from "@sebastienaglae/bnn-core";
+import type {
+  Block,
+  BlockConfig,
+  CustomInlineContent,
+  InlineContent,
+  InlineContentConfig,
+  MarkdownSerializers,
+} from "@sebastienaglae/bnn-core";
 import type { BlockRenderer, InlineRenderer, SlashMenuItem } from "./types";
 import { defaultSlashItems } from "./ui/defaultSlashItems";
+
+/** Serializes a custom block to markdown. `ctx.inline` renders the block's text. */
+export type BlockMarkdownSerializer = (
+  block: Block,
+  ctx: { inline: (content: InlineContent[] | undefined) => string },
+) => string | null | undefined;
+
+/** Serializes a custom inline node (e.g. a mention) to markdown. */
+export type InlineMarkdownSerializer = (ic: CustomInlineContent) => string | null | undefined;
 
 export interface BlockSlashMenuConfig {
   title: string;
@@ -31,12 +47,15 @@ export interface CreateReactBlockSpecOptions {
   render: BlockRenderer;
   /** When provided, a slash-menu command is generated for this block. */
   slashMenu?: BlockSlashMenuConfig;
+  /** Optional markdown exporter so this block survives `blocksToMarkdown`. */
+  toMarkdown?: BlockMarkdownSerializer;
 }
 
 export interface ReactBlockSpec {
   config: BlockConfig;
   renderer: BlockRenderer;
   slashItem?: SlashMenuItem;
+  toMarkdown?: BlockMarkdownSerializer;
 }
 
 export function createReactBlockSpec(
@@ -60,19 +79,20 @@ export function createReactBlockSpec(
       },
     };
   }
-  return { config, renderer: options.render, slashItem };
+  return { config, renderer: options.render, slashItem, toMarkdown: options.toMarkdown };
 }
 
 export interface ReactInlineContentSpec {
   config: InlineContentConfig;
   renderer: InlineRenderer;
+  toMarkdown?: InlineMarkdownSerializer;
 }
 
 export function createReactInlineContentSpec(
   config: InlineContentConfig,
-  options: { render: InlineRenderer },
+  options: { render: InlineRenderer; toMarkdown?: InlineMarkdownSerializer },
 ): ReactInlineContentSpec {
-  return { config, renderer: options.render };
+  return { config, renderer: options.render, toMarkdown: options.toMarkdown };
 }
 
 export interface BlockNoteSchemaInput {
@@ -92,6 +112,8 @@ export interface BlockNoteSchema {
   blockRenderers: Record<string, BlockRenderer>;
   inlineRenderers: Record<string, InlineRenderer>;
   slashItems: SlashMenuItem[];
+  /** Pass to `blocksToMarkdown(doc, schema.markdownSerializers)` for custom export. */
+  markdownSerializers: MarkdownSerializers;
 }
 
 export function createBlockNoteSchema(input: BlockNoteSchemaInput = {}): BlockNoteSchema {
@@ -110,5 +132,13 @@ export function createBlockNoteSchema(input: BlockNoteSchemaInput = {}): BlockNo
     ...(input.extraSlashItems ?? []),
   ];
 
-  return { blockSpecs, inlineSpecs, blockRenderers, inlineRenderers, slashItems };
+  const markdownSerializers: MarkdownSerializers = { blocks: {}, inline: {} };
+  for (const s of input.blockSpecs ?? []) {
+    if (s.toMarkdown) markdownSerializers.blocks![s.config.type] = s.toMarkdown;
+  }
+  for (const s of input.inlineSpecs ?? []) {
+    if (s.toMarkdown) markdownSerializers.inline![s.config.type] = s.toMarkdown;
+  }
+
+  return { blockSpecs, inlineSpecs, blockRenderers, inlineRenderers, slashItems, markdownSerializers };
 }

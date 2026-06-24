@@ -44,8 +44,8 @@ The `Editor` is an observable: `subscribe(listener)` + `getSnapshot()` make it a
 
 - **Model:** `Block { id, type, props, content, children }`; inline content is styled text, links, or custom inline.
 - **Transforms:** split / merge / indent / outdent / change-type, plus Markdown input rules (`# `, `- `, `1. `, `[] `, `> `, ` ``` `, `---`).
-- **History:** undo/redo over content, page metadata, and comments.
-- **Serialization:** `blocksToMarkdown` / `markdownToBlocks`, `blocksToJSON` / `jsonToBlocks`.
+- **History:** undo/redo over content and page metadata.
+- **Serialization:** `blocksToMarkdown` / `markdownToBlocks`, `blocksToJSON` / `jsonToBlocks`. `blocksToMarkdown` accepts optional per-type `MarkdownSerializers` so custom & media blocks export meaningfully.
 
 ## License
 

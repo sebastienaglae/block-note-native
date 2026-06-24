@@ -1,12 +1,22 @@
 {
   "name": "@sebastienaglae/bnn-core",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "description": "Platform-agnostic block-editor engine: document model, schema, transforms, history, markdown.",
   "license": "MIT",
   "author": "Sébastien Aglaé",
   "homepage": "https://github.com/sebastienaglae/block-note-native/tree/main/packages/core#readme",
-  "bugs": { "url": "https://github.com/sebastienaglae/block-note-native/issues" },
-  "keywords": ["block-editor", "rich-text", "notion", "blocknote", "editor", "markdown", "typescript"],
+  "bugs": {
+    "url": "https://github.com/sebastienaglae/block-note-native/issues"
+  },
+  "keywords": [
+    "block-editor",
+    "rich-text",
+    "notion",
+    "blocknote",
+    "editor",
+    "markdown",
+    "typescript"
+  ],
   "type": "module",
   "source": "src/index.ts",
   "main": "./dist/index.js",
@@ -19,7 +29,10 @@
       "default": "./dist/index.js"
     }
   },
-  "files": ["dist", "src"],
+  "files": [
+    "dist",
+    "src"
+  ],
   "sideEffects": false,
   "repository": {
     "type": "git",

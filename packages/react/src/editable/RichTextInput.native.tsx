@@ -81,6 +81,7 @@ export function RichTextInput(props: RichTextInputProps): JSX.Element {
     onBlur,
     onEnter,
     onBackspaceAtStart,
+    onDeleteAtEnd,
   } = props;
 
   const inputRef = useRef<TextInput | null>(null);
@@ -115,8 +116,18 @@ export function RichTextInput(props: RichTextInputProps): JSX.Element {
   };
 
   const handleKeyPress = (e: { nativeEvent: { key: string } }) => {
-    if (e.nativeEvent.key === "Backspace" && selRef.current.start === 0 && selRef.current.end === 0) {
+    const key = e.nativeEvent.key;
+    if (key === "Backspace" && selRef.current.start === 0 && selRef.current.end === 0) {
       onBackspaceAtStart?.();
+      return;
+    }
+    // Hardware-keyboard forward delete at the end of the line (tablets / external
+    // keyboards). On a soft keyboard, Backspace-on-empty already removes the line.
+    if (key === "Delete") {
+      const len = inlineToString(content).length;
+      if (selRef.current.start === selRef.current.end && selRef.current.start === len) {
+        onDeleteAtEnd?.();
+      }
     }
   };
 

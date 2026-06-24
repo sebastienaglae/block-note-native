@@ -15,7 +15,7 @@ export const ICON_LUCIDE = {
   rename: "Pencil",
   move: "CornerUpRight",
   folder: "Folder",
-  comment: "MessageSquare",
+  copy: "Copy",
   check: "Check",
   close: "X",
   send: "Send",

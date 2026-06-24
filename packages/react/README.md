@@ -1,6 +1,6 @@
 # @sebastienaglae/bnn-react
 
-Cross-platform (web + React Native) UI for a Notion-like block editor: the editor view, blocks, slash menu, formatting toolbar, side menu + drag-to-reorder, page tree, comments, page header, **custom blocks & inline content**, i18n, and overridable icons.
+Cross-platform (web + React Native) UI for a Notion-like block editor: the editor view, blocks, slash menu, @-mentions, formatting toolbar, side menu + drag-to-reorder, hover-to-delete on any block, page tree, page header, **custom blocks & inline content**, i18n, and overridable icons.
 
 Written once with React Native primitives and run on web via [react-native-web](https://necolas.github.io/react-native-web/) — only the low-level editable surface is platform-split (`RichTextInput.tsx` / `RichTextInput.native.tsx`). Built on [`@sebastienaglae/bnn-core`](https://github.com/sebastienaglae/block-note-native/tree/main/packages/core).
 
@@ -64,7 +64,7 @@ const Callout = createReactBlockSpec(
 const schema = createBlockNoteSchema({ blockSpecs: [Callout] });
 ```
 
-Standalone, composable pieces — `PageTree`, `CommentsPanel` — can be placed anywhere. Every string is translatable via a `t(key, fallback)` prop (`enLabels` is the full catalog). Icons come from lucide and are individually overridable.
+Standalone, composable pieces — `PageTree`, `BlockNoteView` — can be placed anywhere. Every string is translatable via a `t(key, fallback)` prop (`enLabels` is the full catalog). Icons come from lucide and are individually overridable.
 
 ## License
 

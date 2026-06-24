@@ -2,7 +2,6 @@
 export type {
   Block,
   BlockDocument,
-  Comment,
   CustomInlineContent,
   EditorSelection,
   InlineContent,
@@ -87,4 +86,5 @@ export {
   blocksToMarkdown,
   jsonToBlocks,
   markdownToBlocks,
+  type MarkdownSerializers,
 } from "./markdown/serialize";

@@ -3,6 +3,25 @@
 All notable changes to `@sebastienaglae/bnn-core` and `@sebastienaglae/bnn-react`.
 This project adheres to [Semantic Versioning](https://semver.org/). Releases are cut from git tags (`vX.Y.Z`).
 
+## [0.3.0]
+
+### Added
+
+- **@-mentions** — feed `people` to `<BlockNoteView>`; typing `@` opens a typeahead that inserts a highlighted mention. `MentionUser` type + `renderMention` override.
+- **Delete void blocks** — a hover delete button appears on void blocks (media, table, divider, custom void) that previously had no delete affordance; text blocks remain deletable by emptying them.
+- **Forward-delete** — pressing **Delete** on an empty line removes the line (`Editor.deleteForward`).
+- **Draggable audio seek** — scrub the audio progress bar (drag, not just tap) on web and native.
+- **Custom/media markdown export** — `blocksToMarkdown(doc, serializers)` + per-spec `toMarkdown` hooks; media blocks (video/audio/file/bookmark/map/table) and mentions now export meaningfully instead of vanishing.
+- Docs: **[TRANSLATING.md](TRANSLATING.md)** (localization guide) and **[EMBEDDING.md](EMBEDDING.md)** (feeding the editor from an external website).
+
+### Changed
+
+- Scrolling the page now **dismisses the open slash/mention menu** instead of letting it drift.
+
+### Removed
+
+- **Comments** — the comment system (`CommentsPanel`, `CommentsContext`, `Editor.addComment`/`getComments`/etc., `enableComments`/`onCommentRequested` props, the `Comment` type, and `initialComments`/`comments` on `toJSON`/`replaceDocument`) has been removed.
+
 ## [0.2.0]
 
 ### Added
@@ -30,5 +49,6 @@ This project adheres to [Semantic Versioning](https://semver.org/). Releases are
 
 - Initial release: platform-agnostic core (`@sebastienaglae/bnn-core`) and cross-platform UI (`@sebastienaglae/bnn-react`) — blocks, inline formatting, slash menu, formatting toolbar, side menu + drag-to-reorder, page header, page tree, comments, custom blocks & inline content, i18n, theming, undo/redo, Markdown & JSON serialization.
 
+[0.3.0]: https://github.com/sebastienaglae/block-note-native/releases/tag/v0.3.0
 [0.2.0]: https://github.com/sebastienaglae/block-note-native/releases/tag/v0.2.0
 [0.1.0]: https://github.com/sebastienaglae/block-note-native/releases/tag/v0.1.0

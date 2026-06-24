@@ -105,15 +105,5 @@ export interface PageMeta {
   title: InlineContent[];
 }
 
-/** A comment thread anchored to a block. */
-export interface Comment {
-  id: string;
-  author: string;
-  text: string;
-  /** Epoch ms; supplied by the caller so the model stays deterministic. */
-  createdAt: number;
-  resolved?: boolean;
-}
-
 /** The synthetic block id used by the page title's editable surface. */
 export const TITLE_BLOCK_ID = "__title__";

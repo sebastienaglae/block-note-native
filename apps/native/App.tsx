@@ -4,7 +4,6 @@ import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import {
   BlockNoteView,
-  CommentsPanel,
   Icon,
   PageTree,
   createId,
@@ -14,22 +13,18 @@ import {
   useCreateEditor,
   useEditorState,
   withAccent,
-  type Comment,
   type DropPosition,
   type FontChoice,
   type PageNode,
   type PartialBlock,
 } from "@sebastienaglae/bnn-react";
-import { allElementsContent, demoInitialContent, demoSchema } from "@sebastienaglae/bnn-demo-shared";
+import { allElementsContent, demoInitialContent, demoPeople, demoSchema } from "@sebastienaglae/bnn-demo-shared";
 
-// Page-level comments live under this key in the page's comment map.
-const PAGE_COMMENTS = "__page__";
 const ACCENTS = ["#2383e2", "#e03e3e", "#d9730d", "#0f9d58", "#9065b0", "#c14c8a"];
 
 interface PageDoc {
   meta: { icon?: string; cover?: string; title?: PartialBlock["content"] };
   blocks: PartialBlock[];
-  comments: Record<string, Comment[]>;
 }
 
 // ---- tree helpers ---------------------------------------------------------
@@ -91,7 +86,7 @@ function moveNode(pages: PageNode[], id: string, targetId: string | null, positi
 }
 
 function newDoc(): PageDoc {
-  return { meta: {}, blocks: [{ type: "paragraph" }], comments: {} };
+  return { meta: {}, blocks: [{ type: "paragraph" }] };
 }
 
 // In-memory workspace (native demo has no localStorage persistence).
@@ -113,8 +108,8 @@ function seed(): { pages: PageNode[]; docs: Record<string, PageDoc>; activeId: s
       { id: design, title: "Design", icon: "🎨", favorite: true, children: [] },
     ],
     docs: {
-      [all]: { meta: { icon: "🧱", title: "All elements" }, blocks: allElementsContent, comments: {} },
-      [home]: { meta: { icon: "🚀", title: "Getting Started" }, blocks: demoInitialContent, comments: {} },
+      [all]: { meta: { icon: "🧱", title: "All elements" }, blocks: allElementsContent },
+      [home]: { meta: { icon: "🚀", title: "Getting Started" }, blocks: demoInitialContent },
       [tasks]: {
         meta: { icon: "📋", title: "Tasks" },
         blocks: [
@@ -122,12 +117,10 @@ function seed(): { pages: PageNode[]; docs: Record<string, PageDoc>; activeId: s
           { type: "checkListItem", content: "Ship the page tree" },
           { type: "toggleListItem", props: { collapsed: false }, content: "Backlog", children: [{ type: "bulletListItem", content: "Tables" }] },
         ],
-        comments: {},
       },
       [design]: {
         meta: { icon: "🎨", title: "Design" },
         blocks: [{ type: "heading", props: { level: 2 }, content: "Moodboard" }, { type: "paragraph", content: "Use /image, /video, /map…" }],
-        comments: {},
       },
     },
   };
@@ -138,7 +131,6 @@ export default function App() {
   const [dark, setDark] = useState(false);
   const [accent, setAccent] = useState(ACCENTS[0]);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [showComments, setShowComments] = useState(false);
   const [pages, setPages] = useState<PageNode[]>(initial.current.pages);
   const [activeId, setActiveId] = useState<string>(initial.current.activeId);
   const [font, setFont] = useState<FontChoice>("default");
@@ -152,7 +144,6 @@ export default function App() {
   const editor = useCreateEditor({
     initialContent: docs.current[activeId]?.blocks ?? [{ type: "paragraph" }],
     initialMeta: docs.current[activeId]?.meta,
-    initialComments: docs.current[activeId]?.comments,
     blockSpecs: demoSchema.blockSpecs,
     inlineSpecs: demoSchema.inlineSpecs,
   });
@@ -160,7 +151,7 @@ export default function App() {
 
   // Keep the tree title/icon in sync with the active page's metadata.
   useEffect(() => {
-    docs.current[activeId] = { meta: editor.meta, blocks: editor.document, comments: editor.comments };
+    docs.current[activeId] = { meta: editor.meta, blocks: editor.document };
     const title = inlineToString(editor.meta.title) || "Untitled";
     setPages((p) => updateNode(p, activeId, { title, icon: editor.meta.icon }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -170,10 +161,10 @@ export default function App() {
     if (!docs.current[id]) return;
     setDrawerOpen(false);
     if (id === activeId) return;
-    docs.current[activeId] = { meta: editor.meta, blocks: editor.document, comments: editor.comments };
+    docs.current[activeId] = { meta: editor.meta, blocks: editor.document };
     setActiveId(id);
     const doc = docs.current[id];
-    editor.replaceDocument(doc.blocks, doc.meta, doc.comments);
+    editor.replaceDocument(doc.blocks, doc.meta);
   };
 
   const addPage = (parentId: string | null) => {
@@ -229,27 +220,23 @@ export default function App() {
           <HeaderIcon name={editor.locked ? "lock" : "unlock"} active={editor.locked} onPress={() => editor.setLocked(!editor.locked)} />
           <HeaderIcon name="undo" onPress={() => editor.undo()} />
           <HeaderIcon name="redo" onPress={() => editor.redo()} />
-          <HeaderIcon name="comment" active={showComments} onPress={() => setShowComments((s) => !s)} />
           <HeaderIcon name={dark ? "sun" : "moon"} onPress={() => setDark((d) => !d)} />
         </View>
 
-        {/* Editor + comments */}
+        {/* Editor */}
         <View style={{ flex: 1, flexDirection: "row" }}>
           <BlockNoteView
             editor={editor}
             theme={theme}
             accentColor={accent}
             font={font}
-            enableComments={false}
+            people={demoPeople}
             blockRenderers={demoSchema.blockRenderers}
             inlineRenderers={demoSchema.inlineRenderers}
             slashItems={demoSchema.slashItems}
             onOpenPage={(id) => switchTo(id)}
             style={{ flex: 1 }}
           />
-          {showComments ? (
-            <CommentsPanel editor={editor} theme={theme} blockId={PAGE_COMMENTS} author="You" onClose={() => setShowComments(false)} />
-          ) : null}
         </View>
 
         {/* Slide-in drawer with the page tree */}

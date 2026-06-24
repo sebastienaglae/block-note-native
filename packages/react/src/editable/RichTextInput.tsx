@@ -55,6 +55,7 @@ export function RichTextInput(props: RichTextInputProps): JSX.Element {
     onBlur,
     onEnter,
     onBackspaceAtStart,
+    onDeleteAtEnd,
     onTab,
     onArrowOut,
   } = props;
@@ -184,6 +185,17 @@ export function RichTextInput(props: RichTextInputProps): JSX.Element {
       if (sel && sel.start === 0 && sel.end === 0) {
         e.preventDefault();
         onBackspaceAtStart?.();
+      }
+      return;
+    }
+    if (e.key === "Delete") {
+      // Forward-delete on an empty line removes the block (let the browser handle
+      // the in-text case so it deletes the next character normally).
+      const len = inlineLength(content);
+      const sel = getSelectionOffsets(el);
+      if (sel && sel.start === sel.end && sel.start === len) {
+        e.preventDefault();
+        onDeleteAtEnd?.();
       }
       return;
     }

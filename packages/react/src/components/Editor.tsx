@@ -15,11 +15,9 @@ import { PageHeader } from "./PageHeader";
 import { FormattingToolbar } from "../ui/FormattingToolbar";
 import { SlashMenu } from "../ui/SlashMenu";
 import { EmojiPicker } from "../ui/EmojiPicker";
-import { CommentsPanel } from "../ui/CommentsPanel";
-import { CommentsProvider } from "../comments/CommentsContext";
 import { I18nProvider, type TFunction } from "../i18n/I18nContext";
 import { IconsProvider, type IconOverrides } from "../icons/IconContext";
-import type { BlockRenderer, InlineRenderer, SlashMenuItem } from "../types";
+import type { BlockRenderer, InlineRenderer, MentionUser, SlashMenuItem } from "../types";
 
 export interface BlockNoteViewProps {
   editor: Editor;
@@ -31,25 +29,35 @@ export interface BlockNoteViewProps {
   blockRenderers?: Record<string, BlockRenderer>;
   inlineRenderers?: Record<string, InlineRenderer>;
   slashItems?: SlashMenuItem[];
+  /**
+   * People available for @-mentions. Typing `@` opens a typeahead filtered by
+   * name; choosing one inserts a highlighted `mention` inline content node.
+   */
+  people?: MentionUser[];
+  /**
+   * Builds the inline content inserted when a person is chosen from the @-menu.
+   * Defaults to a `mention` inline with `props.user` / `props.id` and the
+   * visible text `@Name`. Override to match your own inline spec.
+   */
+  renderMention?: (user: MentionUser) => Parameters<Editor["insertInlineContent"]>[0];
   /** Show the Notion-style page header (icon + cover + fixed title). Default true. */
   showPageHeader?: boolean;
   /** Called when a pageLink block is opened. */
   onOpenPage?: (pageId: string) => void;
-  /** Enable the comments UI (side-menu button + thread panel). Default true. */
-  enableComments?: boolean;
-  /**
-   * When set, clicking a block's comment button calls this instead of opening the
-   * built-in panel — render your own <CommentsPanel> wherever you like (#9).
-   */
-  onCommentRequested?: (blockId: string) => void;
-  /** Display name used for new comments. */
-  commentAuthor?: string;
   /** Translate function: (key, englishFallback) => string. */
   t?: TFunction;
   /** Override any named icon with your own component. */
   icons?: IconOverrides;
   /** Outer style for the editor container. */
   style?: object;
+}
+
+/** Default @-mention insertion: a `mention` inline carrying the user id + name. */
+function defaultRenderMention(user: MentionUser): Parameters<Editor["insertInlineContent"]>[0] {
+  return [
+    { type: "mention", props: { id: user.id, user: user.name }, content: [{ type: "text", text: `@${user.name}`, styles: {} }] },
+    { type: "text", text: " ", styles: {} },
+  ];
 }
 
 export function BlockNoteView(props: BlockNoteViewProps): JSX.Element {
@@ -70,9 +78,8 @@ export function BlockNoteView(props: BlockNoteViewProps): JSX.Element {
             theme={theme}
             style={props.style}
             showPageHeader={props.showPageHeader ?? true}
-            enableComments={props.enableComments ?? true}
-            onCommentRequested={props.onCommentRequested}
-            commentAuthor={props.commentAuthor}
+            people={props.people ?? []}
+            renderMention={props.renderMention ?? defaultRenderMention}
           />
         </BnnProvider>
       </IconsProvider>
@@ -85,17 +92,15 @@ function EditorInner({
   theme,
   style,
   showPageHeader,
-  enableComments,
-  onCommentRequested,
-  commentAuthor,
+  people,
+  renderMention,
 }: {
   editor: Editor;
   theme: Theme;
   style?: object;
   showPageHeader: boolean;
-  enableComments: boolean;
-  onCommentRequested?: (blockId: string) => void;
-  commentAuthor?: string;
+  people: MentionUser[];
+  renderMention: (user: MentionUser) => Parameters<Editor["insertInlineContent"]>[0];
 }): JSX.Element {
   useEditorState(editor);
   const { layouts } = useBnn();
@@ -107,9 +112,8 @@ function EditorInner({
         theme={theme}
         style={style}
         showPageHeader={showPageHeader}
-        enableComments={enableComments}
-        onCommentRequested={onCommentRequested}
-        commentAuthor={commentAuthor}
+        people={people}
+        renderMention={renderMention}
       />
     </DndProvider>
   );
@@ -122,28 +126,44 @@ function matchesQuery(item: SlashMenuItem, query: string): boolean {
   return (item.aliases ?? []).some((a) => a.toLowerCase().includes(q));
 }
 
+/** Builds @-mention menu items from the host's people list, filtered by query. */
+function mentionItems(
+  people: MentionUser[],
+  query: string,
+  renderMention: (user: MentionUser) => Parameters<Editor["insertInlineContent"]>[0],
+): SlashMenuItem[] {
+  const q = query.toLowerCase();
+  return people
+    .filter((p) => !q || p.name.toLowerCase().includes(q))
+    .slice(0, 50)
+    .map((p) => ({
+      key: `mention:${p.id}`,
+      title: p.name,
+      subtitle: p.subtitle,
+      emoji: p.avatar ? undefined : "@",
+      group: "People",
+      execute: (ed: Editor) => ed.insertInlineContent(renderMention(p)),
+    }));
+}
+
 function EditorContent({
   editor,
   theme,
   style,
   showPageHeader,
-  enableComments,
-  onCommentRequested,
-  commentAuthor,
+  people,
+  renderMention,
 }: {
   editor: Editor;
   theme: Theme;
   style?: object;
   showPageHeader: boolean;
-  enableComments: boolean;
-  onCommentRequested?: (blockId: string) => void;
-  commentAuthor?: string;
+  people: MentionUser[];
+  renderMention: (user: MentionUser) => Parameters<Editor["insertInlineContent"]>[0];
 }): JSX.Element {
   const { slashItems } = useBnn();
   const dnd = useDnd();
   const scrollRef = useRef<ScrollView | null>(null);
-  const [commentBlockId, setCommentBlockId] = useState<string | null>(null);
-  const openComments = onCommentRequested ?? setCommentBlockId;
   const [activeIndex, setActiveIndex] = useState(0);
   const [dismissedKey, setDismissedKey] = useState<string | null>(null);
   const [slashPos, setSlashPos] = useState<{ top: number; left: number } | null>(null);
@@ -172,25 +192,36 @@ function EditorContent({
     };
   }, [editor]);
 
-  // Derive slash-menu state from the current selection.
-  let slash: { query: string; start: number; blockId: string } | null = null;
+  // Derive trigger-menu state from the current selection. A "/" opens the block
+  // slash menu; an "@" opens the people typeahead (when people are provided).
+  let trigger: { kind: "slash" | "mention"; query: string; start: number; blockId: string } | null = null;
   if (sel && sel.start === sel.end) {
     const block = editor.getBlock(sel.blockId);
     if (block && block.content && block.type !== "codeBlock") {
       const before = inlineToString(block.content).slice(0, sel.start);
-      const m = /(^|\s)\/(\S*)$/.exec(before);
-      if (m) slash = { query: m[2], start: sel.start - m[2].length - 1, blockId: sel.blockId };
+      const ms = /(^|\s)\/(\S*)$/.exec(before);
+      if (ms) {
+        trigger = { kind: "slash", query: ms[2], start: sel.start - ms[2].length - 1, blockId: sel.blockId };
+      } else if (people.length > 0) {
+        const mm = /(^|\s)@(\S*)$/.exec(before);
+        if (mm) trigger = { kind: "mention", query: mm[2], start: sel.start - mm[2].length - 1, blockId: sel.blockId };
+      }
     }
   }
-  const slashKey = slash ? `${slash.blockId}:${slash.start}` : null;
-  const slashVisible = !!slash && dismissedKey !== slashKey;
-  const filtered = slashVisible && slash ? slashItems.filter((it) => matchesQuery(it, slash!.query)) : [];
+  const slashKey = trigger ? `${trigger.kind}:${trigger.blockId}:${trigger.start}` : null;
+  const slashVisible = !!trigger && dismissedKey !== slashKey;
+  const filtered =
+    slashVisible && trigger
+      ? trigger.kind === "slash"
+        ? slashItems.filter((it) => matchesQuery(it, trigger!.query))
+        : mentionItems(people, trigger.query, renderMention)
+      : [];
 
   // Keep refs for the global keydown handler.
-  const refs = useRef({ slashVisible, filtered, activeIndex, slash, sel });
-  refs.current = { slashVisible, filtered, activeIndex, slash, sel };
+  const refs = useRef({ slashVisible, filtered, activeIndex, slash: trigger, sel });
+  refs.current = { slashVisible, filtered, activeIndex, slash: trigger, sel };
 
-  useEffect(() => setActiveIndex(0), [slash?.query, slashKey]);
+  useEffect(() => setActiveIndex(0), [trigger?.query, slashKey]);
 
   // Position the slash menu near the caret, flipping above when low on space (#8).
   const MENU_H = 340;
@@ -216,13 +247,18 @@ function EditorContent({
       return;
     }
     computeSlashPos();
-    // Follow the caret on scroll/resize; the menu is position:fixed so it must track.
-    const onScrollResize = () => computeSlashPos();
-    window.addEventListener("scroll", onScrollResize, true);
-    window.addEventListener("resize", onScrollResize);
+    // Scrolling the page dismisses the open component menu (the caret moves with
+    // the content, so the menu would otherwise drift); resize just repositions.
+    const onScroll = () => {
+      if (slashKey) setDismissedKey(slashKey);
+      setEmoji(null);
+    };
+    const onResize = () => computeSlashPos();
+    window.addEventListener("scroll", onScroll, true);
+    window.addEventListener("resize", onResize);
     return () => {
-      window.removeEventListener("scroll", onScrollResize, true);
-      window.removeEventListener("resize", onScrollResize);
+      window.removeEventListener("scroll", onScroll, true);
+      window.removeEventListener("resize", onResize);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slashVisible, slashKey, activeIndex]);
@@ -271,7 +307,7 @@ function EditorContent({
         if (e.key === "Escape") {
           e.preventDefault();
           e.stopPropagation();
-          if (r.slash) setDismissedKey(`${r.slash.blockId}:${r.slash.start}`);
+          if (r.slash) setDismissedKey(`${r.slash.kind}:${r.slash.blockId}:${r.slash.start}`);
           return;
         }
       }
@@ -344,6 +380,12 @@ function EditorContent({
             scrollY.current = e.nativeEvent.contentOffset.y;
             dnd.setScrollOffset(e.nativeEvent.contentOffset.y);
           }}
+          // A user-driven scroll closes the open component menu (#7). Using
+          // begin-drag (not onScroll) avoids the keyboard auto-scroll dismissing it.
+          onScrollBeginDrag={() => {
+            if (slashKey) setDismissedKey(slashKey);
+            setEmoji(null);
+          }}
           scrollEventThrottle={16}
           onLayout={(e) => {
             viewportH.current = e.nativeEvent.layout.height;
@@ -377,16 +419,6 @@ function EditorContent({
             })}
           </View>
         </ScrollView>
-
-        {enableComments && !onCommentRequested && commentBlockId ? (
-          <CommentsPanel
-            editor={editor}
-            theme={theme}
-            blockId={commentBlockId}
-            author={commentAuthor}
-            onClose={() => setCommentBlockId(null)}
-          />
-        ) : null}
       </View>
 
       <FormattingToolbar
@@ -402,7 +434,7 @@ function EditorContent({
           items={filtered}
           activeIndex={activeIndex}
           position={slashPos}
-          query={slash?.query ?? ""}
+          query={trigger?.query ?? ""}
           onSelect={selectItem}
           onHover={setActiveIndex}
         />
@@ -427,10 +459,5 @@ function EditorContent({
     </View>
   );
 
-  if (!enableComments) return content;
-  return (
-    <CommentsProvider value={{ openComments, activeBlockId: commentBlockId }}>
-      {content}
-    </CommentsProvider>
-  );
+  return content;
 }

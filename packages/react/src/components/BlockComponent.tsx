@@ -1,9 +1,8 @@
 import { useState } from "react";
-import { Platform, Pressable, Text, View } from "react-native";
+import { Platform, Pressable, View } from "react-native";
 import type { Block, Editor } from "@sebastienaglae/bnn-core";
 import { useBnn } from "../context";
 import { useDnd } from "../dnd/DndContext";
-import { useCommentsOptional } from "../comments/CommentsContext";
 import { useT } from "../i18n/I18nContext";
 import { Icon } from "../icons/Icon";
 import { SideMenu } from "../ui/SideMenu";
@@ -23,9 +22,7 @@ export function BlockComponent({ block, editor, depth, listIndex }: BlockCompone
   const { theme, blockRenderers, inlineRenderers, setLayout, onOpenPage } = useBnn();
   const t = useT();
   const dnd = useDnd();
-  const comments = useCommentsOptional();
   const [hover, setHover] = useState(false);
-  const commentCount = comments ? editor.getComments(block.id).length : 0;
 
   const sel = editor.selection;
   const isSelected = sel?.blockId === block.id;
@@ -34,6 +31,10 @@ export function BlockComponent({ block, editor, depth, listIndex }: BlockCompone
   const collapsed = isToggle && !!block.props.collapsed;
 
   const visible = !editor.locked && (Platform.OS === "web" ? hover || isSelected : true);
+  // Void blocks (image/video/audio/file/bookmark/map/table/divider + custom void
+  // blocks) have no editable text, so they can't be removed by emptying + Backspace
+  // the way text blocks can — they get an explicit hover delete button instead.
+  const isVoid = block.content === undefined;
   const isDropTarget = depth === 0 && dnd.state.draggingId !== null && dnd.state.targetId === block.id;
   const isDragging = dnd.state.draggingId === block.id;
 
@@ -90,30 +91,34 @@ export function BlockComponent({ block, editor, depth, listIndex }: BlockCompone
       {isDropTarget && dnd.state.placement === "before" ? dropLine : null}
       <View style={{ flexDirection: "row", alignItems: "flex-start", paddingVertical: 2 }}>
         <SideMenu block={block} editor={editor} theme={theme} visible={visible} draggable={depth === 0 && !editor.locked} />
-        <View style={{ flex: 1, paddingVertical: 1 }}>{renderer(renderProps)}</View>
-        {comments && (commentCount > 0 || (hover && !editor.locked)) ? (
-          <Pressable
-            onPress={() => comments.openComments(block.id)}
-            style={({ hovered }: { hovered?: boolean }) => ({
-              flexDirection: "row",
-              alignItems: "center",
-              marginLeft: 4,
-              paddingHorizontal: 6,
-              height: 24,
-              borderRadius: 5,
-              backgroundColor:
-                commentCount > 0 ? theme.colors.accentSoft : hovered ? theme.colors.menuHover : "transparent",
-            })}
-            accessibilityLabel="Comments"
-          >
-            <Icon name="comment" size={14} color={commentCount > 0 ? theme.colors.accent : theme.colors.textSecondary} />
-            {commentCount > 0 ? (
-              <Text style={{ fontSize: 11, color: theme.colors.accent, marginLeft: 3, fontWeight: "600" }}>
-                {commentCount}
-              </Text>
-            ) : null}
-          </Pressable>
-        ) : null}
+        <View style={{ flex: 1, paddingVertical: 1 }}>
+          {renderer(renderProps)}
+          {/* Hover delete — only for void blocks, which can't be emptied + Backspaced. */}
+          {visible && isVoid ? (
+            <Pressable
+              onPress={() => editor.removeBlocks([block.id])}
+              accessibilityLabel={t("bnn.block.delete", "Delete")}
+              style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => ({
+                position: "absolute",
+                top: 2,
+                right: 2,
+                width: 24,
+                height: 24,
+                borderRadius: 6,
+                alignItems: "center",
+                justifyContent: "center",
+                borderWidth: 1,
+                borderColor: theme.colors.border,
+                backgroundColor: pressed || hovered ? theme.colors.menuHover : theme.colors.menuBackground,
+                opacity: hovered || pressed ? 1 : 0.85,
+                cursor: "pointer",
+                zIndex: 20,
+              })}
+            >
+              <Icon name="trash" size={14} color="#e5484d" />
+            </Pressable>
+          ) : null}
+        </View>
       </View>
 
       {block.children.length > 0 && !collapsed ? (

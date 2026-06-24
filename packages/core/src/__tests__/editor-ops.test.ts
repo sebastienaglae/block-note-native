@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { Editor } from "../editor/Editor";
 import { inlineToString, isLink } from "../util/inline";
-import type { Comment } from "../model/types";
 
 function makeEditor() {
   return new Editor({
@@ -62,6 +61,29 @@ describe("Editor block operations", () => {
     editor.moveBlockDown(editor.document[2].id); // no-op at the bottom
     expect(editor.document).toHaveLength(3);
   });
+
+  it("deleteForward on an empty line removes the block and moves to the next", () => {
+    const editor = new Editor({
+      initialContent: [
+        { type: "paragraph", content: "" },
+        { type: "paragraph", content: "Second" },
+      ],
+    });
+    const first = editor.document[0].id;
+    const handled = editor.deleteForward(first);
+    expect(handled).toBe(true);
+    expect(editor.document).toHaveLength(1);
+    expect(inlineToString(editor.document[0].content)).toBe("Second");
+    expect(editor.selection).toMatchObject({ blockId: editor.document[0].id, start: 0 });
+  });
+
+  it("deleteForward on a non-empty line pulls the next block up", () => {
+    const editor = makeEditor();
+    const first = editor.document[0].id;
+    editor.deleteForward(first);
+    expect(inlineToString(editor.document[0].content)).toBe("FirstSecond");
+    expect(editor.document).toHaveLength(2);
+  });
 });
 
 describe("Editor inline editing", () => {
@@ -101,27 +123,6 @@ describe("Editor page metadata", () => {
   });
 });
 
-describe("Editor comments", () => {
-  const c = (id: string, text: string): Comment => ({ id, author: "Me", text, createdAt: 0 });
-
-  it("adds, updates, resolves and removes comments per block", () => {
-    const editor = makeEditor();
-    const id = editor.document[0].id;
-    editor.addComment(id, c("c1", "hello"));
-    editor.addComment(id, c("c2", "world"));
-    expect(editor.getComments(id)).toHaveLength(2);
-
-    editor.updateComment(id, "c1", { text: "edited", resolved: true });
-    const updated = editor.getComments(id).find((x) => x.id === "c1");
-    expect(updated).toMatchObject({ text: "edited", resolved: true });
-
-    editor.removeComment(id, "c2");
-    expect(editor.getComments(id)).toHaveLength(1);
-    editor.removeComment(id, "c1");
-    expect(editor.comments[id]).toBeUndefined();
-  });
-});
-
 describe("Editor lock + serialization", () => {
   it("ignores edits while locked is set by the host but reflects the flag", () => {
     const editor = makeEditor();
@@ -130,17 +131,15 @@ describe("Editor lock + serialization", () => {
     expect(editor.locked).toBe(true);
   });
 
-  it("replaceDocument swaps content + meta + comments and toJSON round-trips", () => {
+  it("replaceDocument swaps content + meta and toJSON round-trips", () => {
     const editor = makeEditor();
-    editor.addComment(editor.document[0].id, { id: "x", author: "Me", text: "hi", createdAt: 0 });
     const snapshot = editor.toJSON();
     expect(snapshot.blocks).toHaveLength(3);
 
-    editor.replaceDocument([{ type: "paragraph", content: "Fresh" }], { icon: "📄", title: "T" }, {});
+    editor.replaceDocument([{ type: "paragraph", content: "Fresh" }], { icon: "📄", title: "T" });
     expect(editor.document).toHaveLength(1);
     expect(inlineToString(editor.document[0].content)).toBe("Fresh");
     expect(editor.meta.icon).toBe("📄");
-    expect(Object.keys(editor.comments)).toHaveLength(0);
   });
 });
 

@@ -9,6 +9,7 @@ import {
   createBlockNoteSchema,
   createReactBlockSpec,
   createReactInlineContentSpec,
+  type MentionUser,
   type PartialBlock,
   type SlashMenuItem,
 } from "@sebastienaglae/bnn-react";
@@ -52,6 +53,9 @@ export const CalloutBlock = createReactBlockSpec(
       aliases: ["callout", "note", "info", "tip", "warning"],
       props: { emoji: "💡", color: "blue" },
     },
+    // Export the callout as a markdown blockquote prefixed with its emoji.
+    toMarkdown: (block, { inline }) =>
+      `> ${String(block.props.emoji ?? "💡")} ${inline(block.content)}`,
   },
 );
 
@@ -73,8 +77,18 @@ export const MentionInline = createReactInlineContentSpec(
         </Text>
       </View>
     ),
+    // Export mentions as plain "@Name" so they survive markdown.
+    toMarkdown: (ic) => `@${String(ic.props.user ?? "user")}`,
   },
 );
+
+/** People fed to the editor for @-typeahead (type "@" to pick one). */
+export const demoPeople: MentionUser[] = [
+  { id: "alice", name: "Alice", subtitle: "Design" },
+  { id: "bob", name: "Bob", subtitle: "Engineering" },
+  { id: "charlie", name: "Charlie", subtitle: "Product" },
+  { id: "dana", name: "Dana", subtitle: "Marketing" },
+];
 
 const MENTION_USERS = ["Alice", "Bob", "Charlie"];
 

@@ -46,6 +46,8 @@ export interface RichTextInputProps {
   onEnter?(offset: number): void;
   /** Backspace with an empty selection at offset 0. */
   onBackspaceAtStart?(): void;
+  /** Forward-delete (Delete key) with an empty selection at the end of the block. */
+  onDeleteAtEnd?(): void;
   /** Tab / Shift+Tab. */
   onTab?(shift: boolean): void;
   /** Caret tried to leave the top/bottom edge with an arrow key. */
@@ -85,6 +87,18 @@ export interface InlineRenderProps<
 
 export type InlineRenderer = (props: InlineRenderProps) => ReactNode;
 export type InlineRendererMap = Record<string, InlineRenderer>;
+
+/** A person available for @-mentions (fed in by the host app). */
+export interface MentionUser {
+  /** Stable id stored on the inserted mention (props.id). */
+  id: string;
+  /** Display name; the @-typeahead filters on this and shows it. */
+  name: string;
+  /** Optional secondary line in the menu (e.g. an email or role). */
+  subtitle?: string;
+  /** Optional avatar URL (reserved for custom menu rendering). */
+  avatar?: string;
+}
 
 /** A slash-menu command. */
 export interface SlashMenuItem {

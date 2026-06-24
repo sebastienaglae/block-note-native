@@ -4,8 +4,8 @@
  * native React controls (accent play button + seekable bar + time) — a real
  * custom player with no extra native module to link.
  */
-import { useRef, useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { useMemo, useRef, useState } from "react";
+import { PanResponder, Pressable, Text, View } from "react-native";
 import { WebView } from "react-native-webview";
 import type { Theme } from "../../theme/theme";
 import { Icon } from "../../icons/Icon";
@@ -32,27 +32,63 @@ a.addEventListener('pause',function(){post({t:'pause'});});
 a.addEventListener('ended',function(){post({t:'end'});});
 </script></body></html>`;
 
+  const barWRef = useRef(1);
+  barWRef.current = barW;
   const run = (js: string) => ref.current?.injectJavaScript(js + ";true;");
   const toggle = () => run(playing ? "document.getElementById('a').pause()" : "document.getElementById('a').play()");
   const seek = (x: number) => {
-    const ratio = Math.max(0, Math.min(1, x / barW));
+    const ratio = Math.max(0, Math.min(1, x / barWRef.current));
+    setCur(ratio * dur);
     run(`var _a=document.getElementById('a');_a.currentTime=${ratio}*( _a.duration||0)`);
   };
+
+  // Tap + drag-to-scrub: locationX is relative to the bar view, so it works for
+  // both the initial touch and continuous panning.
+  const panResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponder: () => true,
+        onPanResponderGrant: (e) => seek(e.nativeEvent.locationX),
+        onPanResponderMove: (e) => seek(e.nativeEvent.locationX),
+      }),
+    // `dur` is read inside seek; rebuild the responder when it changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [dur],
+  );
 
   return (
     <View style={{ position: "relative", alignSelf: "stretch", width: "100%", flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: theme.colors.backgroundSecondary, borderRadius: theme.radius, borderWidth: 1, borderColor: theme.colors.border, paddingVertical: 10, paddingHorizontal: 12 }}>
       <Pressable onPress={toggle} style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: theme.colors.accent, alignItems: "center", justifyContent: "center" }}>
         <Icon name={playing ? "pause" : "play"} size={18} color={theme.colors.onAccent} fill={theme.colors.onAccent} />
       </Pressable>
-      <Pressable
-        style={{ flex: 1, paddingVertical: 8 }}
+      <View
+        style={{ flex: 1, paddingVertical: 10 }}
         onLayout={(e: { nativeEvent: { layout: { width: number } } }) => setBarW(e.nativeEvent.layout.width || 1)}
-        onPress={(e?: { nativeEvent?: { locationX?: number } }) => seek(e?.nativeEvent?.locationX ?? 0)}
+        {...panResponder.panHandlers}
       >
         <View style={{ height: 6, borderRadius: 3, backgroundColor: theme.colors.border }}>
           <View style={{ width: `${pct * 100}%`, height: 6, borderRadius: 3, backgroundColor: theme.colors.accent }} />
+          {/* Draggable thumb */}
+          <View
+            style={{
+              position: "absolute",
+              top: -4,
+              left: `${pct * 100}%`,
+              width: 14,
+              height: 14,
+              marginLeft: -7,
+              borderRadius: 7,
+              backgroundColor: theme.colors.accent,
+              shadowColor: "#000",
+              shadowOpacity: 0.3,
+              shadowRadius: 2,
+              shadowOffset: { width: 0, height: 1 },
+              elevation: 2,
+            }}
+          />
         </View>
-      </Pressable>
+      </View>
       <Text style={{ fontSize: 11, color: theme.colors.textSecondary }}>
         {fmt(cur)} / {fmt(dur)}
       </Text>

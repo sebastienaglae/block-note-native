@@ -15,15 +15,16 @@ A Notion-like, block-based rich-text editor (in the spirit of [BlockNote](https:
 - **Inline formatting:** bold, italic, underline, strikethrough, inline code, links, text color & highlight, **emoji**, **@mentions**.
 - **Page header** — Notion-style **cover image**, **emoji icon** (with a picker), and a **fixed title** that can't be moved or deleted.
 - **Page tree sidebar** — collapsible, page icons, favorites, and a per-item **⋯ menu** (favorite / rename / move / delete) + **+** to add a child. Pages contain pages.
-- **Comments** — per-block threads with add / edit / delete / resolve and a count badge.
+- **Delete void blocks** — media & other void blocks (image, video, audio, file, bookmark, map, table, divider, custom void) show a hover delete button, since they have no text to empty; text blocks delete by clearing them, and **Delete** on an empty line removes the line.
 - **Slash menu** (`/`) — filterable, grouped, keyboard-navigable, extensible.
+- **@-mentions** — feed in a list of people; typing `@` opens a typeahead that inserts a highlighted mention.
 - **Formatting toolbar** that floats over the selection (web) / docks above the keyboard (native).
 - **Side menu** per block with an add button and a **drag handle** to reorder.
 - **Keyboard model:** Enter splits, Backspace-at-start merges, **Tab / Shift-Tab** nest/un-nest, arrow navigation across blocks.
 - **Markdown input rules:** `# `, `## `, `- `, `1. `, `[] `, `> `, ` ``` `, `---`.
 - **Theming:** light / dark, **custom accent color** (any color → accent / soft / selection tints), and a **font switcher** (default / serif / mono).
 - **Lock / read-only** mode — a hook for "live" features (presence, locking) without a backend.
-- **Undo / redo** (covers content, page meta & comments), JSON & Markdown **import/export**, localStorage persistence.
+- **Undo / redo** (covers content & page meta), JSON & Markdown **import/export** (with per-spec `toMarkdown` hooks so custom/media blocks export meaningfully), localStorage persistence.
 - **Custom components** — define a block or inline content **once** (with React Native primitives) and it renders on both platforms.
 
 ---
@@ -172,27 +173,25 @@ See [`packages/demo-shared/src/index.tsx`](packages/demo-shared/src/index.tsx) f
 
 ## 🧱 Composable, decoupled components
 
-The page tree, the editor, and the comments are **independent components** you can place anywhere:
+The page tree and the editor are **independent components** you can place anywhere:
 
 ```tsx
-import { PageTree, BlockNoteView, CommentsPanel } from "@sebastienaglae/bnn-react";
-
-// Tree on the left, editor in the middle, your own comments panel on the right.
-const [commentBlockId, setCommentBlockId] = useState<string | null>(null);
+import { PageTree, BlockNoteView } from "@sebastienaglae/bnn-react";
 
 <>
   <PageTree pages={pages} activeId={id} onSelect={...} onAddChild={...} onRename={...}
             onRemove={...} onToggleFavorite={...} onMove={...} theme={theme} />
-  <BlockNoteView editor={editor} onCommentRequested={setCommentBlockId} /* emits, doesn't render */ />
-  {commentBlockId && (
-    <CommentsPanel editor={editor} blockId={commentBlockId} onClose={() => setCommentBlockId(null)} />
-  )}
+  <BlockNoteView
+    editor={editor}
+    people={[{ id: "alice", name: "Alice" }]}   // enables @-mentions
+    onOpenPage={(id) => switchTo(id)}
+  />
 </>
 ```
 
-Omit `onCommentRequested` to use the built-in docked comments panel instead.
-
 ## 🌍 i18n (100% translatable)
+
+See **[TRANSLATING.md](TRANSLATING.md)** for the full guide. In short:
 
 Every user-facing string goes through `t(key, fallback)`. Pass your own translate function (any library):
 
@@ -206,10 +205,10 @@ i18next.init({ lng: "fr", resources: { en: { translation: enLabels }, fr: { tran
 // 2. Adapt i18next to the (key, fallback) signature.
 const t = (key: string, fallback: string) => i18next.t(key, { defaultValue: fallback });
 
-<BlockNoteView editor={editor} t={t} />;   // PageTree / CommentsPanel also accept `t`
+<BlockNoteView editor={editor} t={t} />;   // PageTree also accepts `t`
 ```
 
-`enLabels` is the full key catalog (slash menu, tree, comments, toolbar, placeholders…). Nothing is hard-coded.
+`enLabels` is the full key catalog (slash menu, tree, block menu, toolbar, placeholders…). Nothing is hard-coded.
 
 ## 🎨 Icons & theming
 
@@ -274,7 +273,7 @@ console.log(blocksToMarkdown(editor.document));
 
 ## 🧪 What's verified
 
-- **38 unit tests** (`npm test`): `@sebastienaglae/bnn-core` covers split/merge/indent/outdent, inline mark toggling, markdown round-trip, block ops, page metadata, comments, and history; `@sebastienaglae/bnn-react` guards the i18n catalog.
+- **39 unit tests** (`npm test`): `@sebastienaglae/bnn-core` covers split/merge/indent/outdent, forward-delete, inline mark toggling, markdown round-trip, block ops, page metadata, and history; `@sebastienaglae/bnn-react` guards the i18n catalog.
 - Web (Vite): rendering, editing, slash menu (+ custom items), formatting toolbar, markdown rules, Tab nesting, persistence — all exercised.
 - Native (Expo): bundles cleanly through Metro in the monorepo and renders the full editor (incl. custom block + mention) via react-native-web; the same shared code path.
 
@@ -299,6 +298,8 @@ npm install @sebastienaglae/bnn-react react
 ```
 
 See the package READMEs — [`@sebastienaglae/bnn-core`](packages/core/README.md) and [`@sebastienaglae/bnn-react`](packages/react/README.md) — for quick-starts. Installing from GitHub Packages requires authenticating `npm` to GitHub (a token with `read:packages`).
+
+**Feeding the editor from your website** (passing content in, reading it back, JSON/Markdown round-trip): see **[EMBEDDING.md](EMBEDDING.md)**. **Localizing the UI:** see **[TRANSLATING.md](TRANSLATING.md)**.
 
 ---
 

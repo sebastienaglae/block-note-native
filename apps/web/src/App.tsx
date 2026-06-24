@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import {
   BlockNoteView,
-  CommentsPanel,
   Icon,
   PageTree,
   Pressable,
@@ -17,21 +16,16 @@ import {
   useCreateEditor,
   useEditorState,
   withAccent,
-  type Comment,
   type DropPosition,
   type FontChoice,
   type PageNode,
   type PartialBlock,
 } from "@sebastienaglae/bnn-react";
-import { allElementsContent, demoInitialContent, demoSchema } from "@sebastienaglae/bnn-demo-shared";
-
-// Page-level comments live under this key in the page's comment map.
-const PAGE_COMMENTS = "__page__";
+import { allElementsContent, demoInitialContent, demoPeople, demoSchema } from "@sebastienaglae/bnn-demo-shared";
 
 interface PageDoc {
   meta: { icon?: string; cover?: string; title?: PartialBlock["content"] };
   blocks: PartialBlock[];
-  comments: Record<string, Comment[]>;
 }
 
 const ACCENTS = ["#2383e2", "#e03e3e", "#d9730d", "#0f9d58", "#9065b0", "#c14c8a"];
@@ -96,7 +90,7 @@ function moveNode(pages: PageNode[], id: string, targetId: string | null, positi
 }
 
 function newDoc(): PageDoc {
-  return { meta: {}, blocks: [{ type: "paragraph" }], comments: {} };
+  return { meta: {}, blocks: [{ type: "paragraph" }] };
 }
 
 function seed(): { pages: PageNode[]; docs: Record<string, PageDoc>; activeId: string } {
@@ -123,8 +117,8 @@ function seed(): { pages: PageNode[]; docs: Record<string, PageDoc>; activeId: s
       { id: design, title: "Design", icon: "🎨", favorite: true, children: [] },
     ],
     docs: {
-      [all]: { meta: { icon: "🧱", title: "All elements" }, blocks: allElementsContent, comments: {} },
-      [home]: { meta: { icon: "🚀", title: "Getting Started" }, blocks: demoInitialContent, comments: {} },
+      [all]: { meta: { icon: "🧱", title: "All elements" }, blocks: allElementsContent },
+      [home]: { meta: { icon: "🚀", title: "Getting Started" }, blocks: demoInitialContent },
       [tasks]: {
         meta: { icon: "📋", title: "Tasks" },
         blocks: [
@@ -132,12 +126,10 @@ function seed(): { pages: PageNode[]; docs: Record<string, PageDoc>; activeId: s
           { type: "checkListItem", content: "Ship the page tree" },
           { type: "toggleListItem", props: { collapsed: false }, content: "Backlog", children: [{ type: "bulletListItem", content: "Tables" }] },
         ],
-        comments: {},
       },
       [design]: {
         meta: { icon: "🎨", title: "Design" },
         blocks: [{ type: "heading", props: { level: 2 }, content: "Moodboard" }, { type: "paragraph", content: "Use /image, /video, /map…" }],
-        comments: {},
       },
     },
   };
@@ -149,7 +141,6 @@ export function App(): JSX.Element {
   const [accent, setAccent] = useState(ACCENTS[0]);
   const [font, setFont] = useState<FontChoice>("default");
   const [preview, setPreview] = useState<"none" | "json" | "markdown">("none");
-  const [showComments, setShowComments] = useState(false);
   const [pages, setPages] = useState<PageNode[]>(initial.current.pages);
   const [activeId, setActiveId] = useState<string>(initial.current.activeId);
   const docs = useRef<Record<string, PageDoc>>(initial.current.docs);
@@ -159,7 +150,6 @@ export function App(): JSX.Element {
   const editor = useCreateEditor({
     initialContent: docs.current[activeId]?.blocks ?? [{ type: "paragraph" }],
     initialMeta: docs.current[activeId]?.meta,
-    initialComments: docs.current[activeId]?.comments,
     blockSpecs: demoSchema.blockSpecs,
     inlineSpecs: demoSchema.inlineSpecs,
   });
@@ -174,7 +164,6 @@ export function App(): JSX.Element {
     docs.current[activeId] = {
       meta: editor.meta,
       blocks: editor.document,
-      comments: editor.comments,
     };
     const title = inlineToString(editor.meta.title) || "Untitled";
     setPages((p) => updateNode(p, activeId, { title, icon: editor.meta.icon }));
@@ -191,10 +180,10 @@ export function App(): JSX.Element {
 
   const switchTo = (id: string) => {
     if (id === activeId || !docs.current[id]) return;
-    docs.current[activeId] = { meta: editor.meta, blocks: editor.document, comments: editor.comments };
+    docs.current[activeId] = { meta: editor.meta, blocks: editor.document };
     setActiveId(id);
     const doc = docs.current[id];
-    editor.replaceDocument(doc.blocks, doc.meta, doc.comments);
+    editor.replaceDocument(doc.blocks, doc.meta);
   };
 
   const addPage = (parentId: string | null) => {
@@ -222,7 +211,11 @@ export function App(): JSX.Element {
   );
 
   const previewText =
-    preview === "json" ? blocksToJSON(editor.document) : preview === "markdown" ? blocksToMarkdown(editor.document) : "";
+    preview === "json"
+      ? blocksToJSON(editor.document)
+      : preview === "markdown"
+        ? blocksToMarkdown(editor.document, demoSchema.markdownSerializers)
+        : "";
   const nextFont: Record<FontChoice, FontChoice> = { default: "serif", serif: "mono", mono: "default" };
 
   return (
@@ -291,12 +284,6 @@ export function App(): JSX.Element {
           <Pressable onPress={() => editor.redo()} style={{ padding: 7, borderRadius: 6, borderWidth: 1, borderColor: theme.colors.border }}>
             <Icon name="redo" size={15} color={theme.colors.text} />
           </Pressable>
-          <Pressable
-            onPress={() => setShowComments((s) => !s)}
-            style={{ padding: 7, borderRadius: 6, borderWidth: 1, borderColor: showComments ? accent : theme.colors.border, backgroundColor: showComments ? theme.colors.accentSoft : "transparent" }}
-          >
-            <Icon name="comment" size={15} color={showComments ? accent : theme.colors.text} />
-          </Pressable>
           <HeaderBtn label="JSON" active={preview === "json"} onPress={() => setPreview(preview === "json" ? "none" : "json")} />
           <HeaderBtn label="MD" active={preview === "markdown"} onPress={() => setPreview(preview === "markdown" ? "none" : "markdown")} />
           <Pressable onPress={() => setDark((d) => !d)} style={{ padding: 7, borderRadius: 6, borderWidth: 1, borderColor: theme.colors.border }}>
@@ -310,16 +297,13 @@ export function App(): JSX.Element {
             theme={theme}
             accentColor={accent}
             font={font}
-            enableComments={false}
+            people={demoPeople}
             blockRenderers={demoSchema.blockRenderers}
             inlineRenderers={demoSchema.inlineRenderers}
             slashItems={demoSchema.slashItems}
             onOpenPage={(id) => switchTo(id)}
             style={{ flex: 1 }}
           />
-          {showComments ? (
-            <CommentsPanel editor={editor} theme={theme} blockId={PAGE_COMMENTS} author="You" onClose={() => setShowComments(false)} />
-          ) : null}
           {preview !== "none" ? (
             <View style={{ width: 360, borderLeftWidth: 1, borderLeftColor: theme.colors.border, backgroundColor: theme.colors.backgroundSecondary }}>
               <Text style={{ fontSize: 11, fontWeight: "700", color: theme.colors.textSecondary, padding: 12, textTransform: "uppercase" }}>

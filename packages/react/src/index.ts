@@ -24,6 +24,8 @@ export {
   type BlockNoteSchemaInput,
   type CreateReactBlockSpecOptions,
   type BlockSlashMenuConfig,
+  type BlockMarkdownSerializer,
+  type InlineMarkdownSerializer,
 } from "./spec";
 
 // Default renderers / slash items (for extension)
@@ -37,8 +39,6 @@ export { RichTextInput } from "./editable/RichTextInput";
 export { EmojiPicker } from "./ui/EmojiPicker";
 export { PageHeader } from "./components/PageHeader";
 export { PageTree, type PageNode, type DropPosition } from "./ui/PageTree";
-export { CommentsPanel } from "./ui/CommentsPanel";
-export { useCommentsOptional } from "./comments/CommentsContext";
 
 // Icons (lucide, overridable)
 export { Icon } from "./icons/Icon";
@@ -56,6 +56,7 @@ export type {
   InlineRenderer,
   InlineRenderProps,
   SlashMenuItem,
+  MentionUser,
   RichTextInputProps,
   EditableSelection,
   BlockTextStyle,

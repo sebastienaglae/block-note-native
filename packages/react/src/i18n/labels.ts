@@ -102,7 +102,7 @@ export const enLabels = {
   // Side menu
   "bnn.side.add": "Add block below",
   "bnn.side.drag": "Drag to reorder",
-  "bnn.side.comment": "Comment",
+  "bnn.block.delete": "Delete",
 
   // Page header
   "bnn.header.addIcon": "Add icon",
@@ -134,20 +134,6 @@ export const enLabels = {
   // Table
   "bnn.table.row": "Row",
   "bnn.table.col": "Column",
-
-  // Comments
-  "bnn.comments.title": "Comments",
-  "bnn.comments.none": "No comments yet",
-  "bnn.comments.add": "Add a comment…",
-  "bnn.comments.send": "Comment",
-  "bnn.comments.resolve": "Resolve",
-  "bnn.comments.reopen": "Reopen",
-  "bnn.comments.edit": "Edit",
-  "bnn.comments.delete": "Delete",
-  "bnn.comments.save": "Save",
-  "bnn.comments.cancel": "Cancel",
-  "bnn.comments.resolved": "resolved",
-  "bnn.comments.justNow": "just now",
 
   // Emoji picker
   "bnn.emoji.filter": "Filter…",

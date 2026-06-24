@@ -1,12 +1,23 @@
 {
   "name": "@sebastienaglae/bnn-react",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "description": "Cross-platform (web + React Native) UI for the block editor: blocks, slash menu, toolbar, page tree, comments, custom components, i18n, icons.",
   "license": "MIT",
   "author": "Sébastien Aglaé",
   "homepage": "https://github.com/sebastienaglae/block-note-native/tree/main/packages/react#readme",
-  "bugs": { "url": "https://github.com/sebastienaglae/block-note-native/issues" },
-  "keywords": ["block-editor", "rich-text", "notion", "blocknote", "react", "react-native", "react-native-web", "editor"],
+  "bugs": {
+    "url": "https://github.com/sebastienaglae/block-note-native/issues"
+  },
+  "keywords": [
+    "block-editor",
+    "rich-text",
+    "notion",
+    "blocknote",
+    "react",
+    "react-native",
+    "react-native-web",
+    "editor"
+  ],
   "type": "module",
   "source": "src/index.ts",
   "main": "./dist/index.js",
@@ -19,7 +30,10 @@
       "default": "./dist/index.js"
     }
   },
-  "files": ["dist", "src"],
+  "files": [
+    "dist",
+    "src"
+  ],
   "sideEffects": false,
   "repository": {
     "type": "git",
@@ -36,7 +50,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
-    "@sebastienaglae/bnn-core": "0.1.0"
+    "@sebastienaglae/bnn-core": "0.3.0"
   },
   "peerDependencies": {
     "react": ">=18",
@@ -47,10 +61,20 @@
     "react-native-webview": "*"
   },
   "peerDependenciesMeta": {
-    "react-native": { "optional": true },
-    "lucide-react": { "optional": true },
-    "lucide-react-native": { "optional": true },
-    "react-native-svg": { "optional": true },
-    "react-native-webview": { "optional": true }
+    "react-native": {
+      "optional": true
+    },
+    "lucide-react": {
+      "optional": true
+    },
+    "lucide-react-native": {
+      "optional": true
+    },
+    "react-native-svg": {
+      "optional": true
+    },
+    "react-native-webview": {
+      "optional": true
+    }
   }
 }

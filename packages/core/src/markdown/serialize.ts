@@ -1,15 +1,35 @@
 /** Lightweight markdown + JSON (de)serialization for persistence and export. */
-import type { Block, InlineContent, PartialBlock, StyledText } from "../model/types";
+import type { Block, CustomInlineContent, InlineContent, PartialBlock, StyledText } from "../model/types";
 import { icText, isLink, isStyledText } from "../util/inline";
+
+/**
+ * Per-type markdown serializers for custom / special content. A host (or the
+ * schema produced by `createBlockNoteSchema`) supplies these so custom blocks
+ * and inline content export to meaningful markdown instead of bare text.
+ */
+export interface MarkdownSerializers {
+  /** Keyed by block `type`. Return a markdown string, or `null`/`undefined` to fall back to the built-in handling. */
+  blocks?: Record<
+    string,
+    (block: Block, ctx: { inline: (content: InlineContent[] | undefined) => string }) => string | null | undefined
+  >;
+  /** Keyed by inline `type`. Return the markdown for a custom inline node (e.g. `@Alice`). */
+  inline?: Record<string, (ic: CustomInlineContent) => string | null | undefined>;
+}
 
 // ---- inline ---------------------------------------------------------------
 
-function inlineToMarkdown(content: InlineContent[] | undefined): string {
+function inlineToMarkdown(
+  content: InlineContent[] | undefined,
+  serializers?: MarkdownSerializers,
+): string {
   if (!content) return "";
   return content
     .map((ic) => {
       if (isStyledText(ic)) return styleText(ic);
       if (isLink(ic)) return `[${ic.content.map(styleText).join("")}](${ic.href})`;
+      const custom = serializers?.inline?.[ic.type]?.(ic as CustomInlineContent);
+      if (custom != null) return custom;
       return icText(ic); // custom inline -> its visible text
     })
     .join("");
@@ -27,50 +47,111 @@ function styleText(t: StyledText): string {
 
 // ---- blocks ---------------------------------------------------------------
 
-function blockToMarkdown(block: Block, depth: number, numberedIndex: number): string {
+function blockToMarkdown(
+  block: Block,
+  depth: number,
+  numberedIndex: number,
+  serializers?: MarkdownSerializers,
+): string {
   const indent = "  ".repeat(depth);
-  const text = inlineToMarkdown(block.content);
-  let line: string;
-  switch (block.type) {
-    case "heading":
-      line = `${"#".repeat(Number(block.props.level) || 1)} ${text}`;
-      break;
-    case "bulletListItem":
-      line = `- ${text}`;
-      break;
-    case "numberedListItem":
-      line = `${numberedIndex}. ${text}`;
-      break;
-    case "checkListItem":
-      line = `- [${block.props.checked ? "x" : " "}] ${text}`;
-      break;
-    case "quote":
-      line = `> ${text}`;
-      break;
-    case "codeBlock":
-      line = `\`\`\`${block.props.language || ""}\n${text}\n\`\`\``;
-      break;
-    case "divider":
-      line = "---";
-      break;
-    case "image":
-      line = `![${block.props.caption || ""}](${block.props.url || ""})`;
-      break;
-    default:
-      line = text;
+  const text = inlineToMarkdown(block.content, serializers);
+  const p = block.props as Record<string, unknown>;
+  const str = (v: unknown): string => (v == null ? "" : String(v));
+  let line: string | null | undefined;
+
+  // 1) Host-provided serializer for this (custom) block type wins.
+  const custom = serializers?.blocks?.[block.type]?.(block, {
+    inline: (c) => inlineToMarkdown(c, serializers),
+  });
+  if (custom != null) {
+    line = custom;
+  } else {
+    switch (block.type) {
+      case "heading":
+      case "toggleHeading":
+        line = `${"#".repeat(Number(p.level) || 1)} ${text}`;
+        break;
+      case "bulletListItem":
+        line = `- ${text}`;
+        break;
+      case "toggleListItem":
+        line = `- ${text}`;
+        break;
+      case "numberedListItem":
+        line = `${numberedIndex}. ${text}`;
+        break;
+      case "checkListItem":
+        line = `- [${p.checked ? "x" : " "}] ${text}`;
+        break;
+      case "quote":
+        line = `> ${text}`;
+        break;
+      case "codeBlock":
+        line = `\`\`\`${str(p.language)}\n${text}\n\`\`\``;
+        break;
+      case "divider":
+        line = "---";
+        break;
+      case "image":
+        line = `![${str(p.caption)}](${str(p.url)})`;
+        break;
+      // --- special / media blocks: emit meaningful markdown instead of "" ---
+      case "video":
+        line = `[📹 ${str(p.caption) || "Video"}](${str(p.url)})`;
+        break;
+      case "audio":
+        line = `[🎵 ${str(p.caption) || "Audio"}](${str(p.url)})`;
+        break;
+      case "file":
+        line = `[📎 ${str(p.name) || "File"}](${str(p.url)})`;
+        break;
+      case "bookmark":
+        line = `[🔖 ${str(p.title) || str(p.url)}](${str(p.url)})`;
+        break;
+      case "mapView":
+        line = `[🗺 ${str(p.query) || "Map"}](https://www.openstreetmap.org/search?query=${encodeURIComponent(str(p.query))})`;
+        break;
+      case "pageLink":
+        line = `[${str(p.icon)} ${str(p.title) || "Untitled"}](#${str(p.pageId)})`;
+        break;
+      case "table":
+        line = tableToMarkdown(p.cells);
+        break;
+      default:
+        line = text;
+    }
   }
-  let out = indent + line;
-  if (block.children.length) out += "\n" + blocksToMarkdown(block.children, depth + 1);
+  let out = indent + (line ?? text);
+  if (block.children.length) out += "\n" + blocksToMarkdown(block.children, serializers, depth + 1);
   return out;
 }
 
-export function blocksToMarkdown(blocks: Block[], depth = 0): string {
+/** Renders a 2D cell array as a GitHub-flavored markdown table. */
+function tableToMarkdown(cells: unknown): string {
+  if (!Array.isArray(cells) || cells.length === 0) return "";
+  const rows = cells as unknown[][];
+  const cols = Math.max(...rows.map((r) => (Array.isArray(r) ? r.length : 0)));
+  const cell = (r: unknown[], c: number): string => String(r?.[c] ?? "").replace(/\|/g, "\\|");
+  const [head, ...body] = rows;
+  const headLine = `| ${Array.from({ length: cols }, (_, c) => cell(head, c)).join(" | ")} |`;
+  const sep = `| ${Array.from({ length: cols }, () => "---").join(" | ")} |`;
+  const bodyLines = body.map(
+    (r) => `| ${Array.from({ length: cols }, (_, c) => cell(r, c)).join(" | ")} |`,
+  );
+  return [headLine, sep, ...bodyLines].join("\n");
+}
+
+export function blocksToMarkdown(
+  blocks: Block[],
+  serializers?: MarkdownSerializers,
+  depth = 0,
+): string {
   let n = 0;
   return blocks
     .map((b) => {
       if (b.type === "numberedListItem") n += 1;
       else n = 0;
-      return blockToMarkdown(b, depth, n);
+      return blockToMarkdown(b, depth, n, serializers);
     })
     .join("\n");
 }

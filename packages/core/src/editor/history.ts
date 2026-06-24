@@ -1,11 +1,10 @@
 /** Snapshot-based undo/redo. Document arrays are immutable, so snapshots are cheap references. */
-import type { Block, Comment, EditorSelection, PageMeta } from "../model/types";
+import type { Block, EditorSelection, PageMeta } from "../model/types";
 
 export interface Snapshot {
   document: Block[];
   selection: EditorSelection;
   meta: PageMeta;
-  comments: Record<string, Comment[]>;
 }
 
 export class History {

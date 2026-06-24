@@ -90,6 +90,7 @@ export function BlockContent(props: BlockContentProps): JSX.Element {
         editor.splitAtSelection();
       }}
       onBackspaceAtStart={() => editor.mergeBackward(block.id)}
+      onDeleteAtEnd={() => editor.deleteForward(block.id)}
       onTab={(shift) => (shift ? editor.unnestBlock(block.id) : editor.nestBlock(block.id))}
       onArrowOut={(dir) => {
         const target = dir === "up" ? editor.getPrevBlock(block.id) : editor.getNextBlock(block.id);
