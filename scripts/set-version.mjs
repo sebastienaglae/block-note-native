@@ -14,11 +14,18 @@ if (!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(version)) {
   process.exit(1);
 }
 
-const INTERNAL = ["@sebastienaglae/bnn-core", "@sebastienaglae/bnn-react"];
+const INTERNAL = [
+  "@sebastienaglae/bnn-core",
+  "@sebastienaglae/bnn-react",
+  "@sebastienaglae/bnn-demo-shared",
+];
 const files = [
+  "package.json",
   "packages/core/package.json",
   "packages/react/package.json",
   "packages/demo-shared/package.json",
+  "apps/web/package.json",
+  "apps/native/package.json",
 ];
 
 for (const file of files) {
