@@ -23,12 +23,25 @@ export function hostOf(url: string): string {
 }
 
 export function videoEmbed(url: string): string | null {
-  const yt = /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([\w-]+)/.exec(url);
+  const yt = /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([\w-]+)/.exec(url);
   // Use the privacy-friendly embed host + playsinline/rel params; this avoids the
   // "Video unavailable / error 153" the default embed throws inside an Android WebView.
   if (yt) return `https://www.youtube-nocookie.com/embed/${yt[1]}?playsinline=1&rel=0&modestbranding=1`;
-  const vimeo = /vimeo\.com\/(\d+)/.exec(url);
+  const vimeo = /vimeo\.com\/(?:video\/)?(\d+)/.exec(url);
   if (vimeo) return `https://player.vimeo.com/video/${vimeo[1]}`;
+  const dailymotion = /(?:dailymotion\.com\/video\/|dai\.ly\/)([a-zA-Z0-9]+)/.exec(url);
+  if (dailymotion) return `https://www.dailymotion.com/embed/video/${dailymotion[1]}`;
+  const loom = /loom\.com\/(?:share|embed)\/([\w-]+)/.exec(url);
+  if (loom) return `https://www.loom.com/embed/${loom[1]}`;
+  const wistia = /(?:wistia\.com\/medias\/|wi\.st\/medias\/|wistia\.net\/embed\/iframe\/)([\w-]+)/.exec(url);
+  if (wistia) return `https://fast.wistia.net/embed/iframe/${wistia[1]}`;
+  const streamable = /streamable\.com\/(?:e\/)?(\w+)/.exec(url);
+  if (streamable) return `https://streamable.com/e/${streamable[1]}`;
+  // Twitch requires the embedding parent host, which only exists on web.
+  const twitch = /twitch\.tv\/videos\/(\d+)/.exec(url);
+  if (twitch && typeof window !== "undefined" && window.location?.hostname) {
+    return `https://player.twitch.tv/?video=${twitch[1]}&parent=${window.location.hostname}&autoplay=false`;
+  }
   return null;
 }
 

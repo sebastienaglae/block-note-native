@@ -103,13 +103,18 @@ export function RichTextInput(props: RichTextInputProps): JSX.Element {
     if (needsPaint) paint(el);
 
     if (active && editable) {
-      if (el.ownerDocument.activeElement !== el) el.focus({ preventScroll: true });
+      // If we have to (re)focus this block, the browser's DOM selection lives in
+      // whatever block we came from — so the cached `lastReportedSel` guard is
+      // stale and we must re-apply the caret even when it "matches" (fixes the
+      // cursor jumping/landing wrong when switching blocks).
+      const needFocus = el.ownerDocument.activeElement !== el;
+      if (needFocus) el.focus({ preventScroll: true });
       if (selection) {
         const reportedHere =
           lastReportedSel.current &&
           lastReportedSel.current.start === selection.start &&
           lastReportedSel.current.end === selection.end;
-        if (needsPaint || !reportedHere) {
+        if (needsPaint || needFocus || !reportedHere) {
           setSelectionOffsets(el, selection.start, selection.end);
           lastReportedSel.current = { start: selection.start, end: selection.end };
         }

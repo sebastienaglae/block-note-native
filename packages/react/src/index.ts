@@ -11,7 +11,7 @@ export { useCreateEditor, useEditorState } from "./hooks/useEditor";
 export { BnnProvider, useBnn, type BnnContextValue, type BlockLayout } from "./context";
 
 // Theme
-export { lightTheme, darkTheme, withAccent, withFont, type Theme, type FontChoice } from "./theme/theme";
+export { lightTheme, darkTheme, withAccent, withColors, withFont, type Theme, type FontChoice } from "./theme/theme";
 
 // Custom component API
 export {

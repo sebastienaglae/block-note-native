@@ -51,7 +51,7 @@ const ToggleHeading: BlockRenderer = ({ block, editor, theme, InlineContentView 
 const VideoBlock: BlockRenderer = ({ block, editor, theme }) => {
   const url = String(block.props.url || "");
   if (!url)
-    return <MediaEmpty editor={editor} blockId={block.id} propKey="url" icon="video" theme={theme} labelKey="bnn.media.addVideo" labelFallback="Add a video" phKey="bnn.media.urlVideo" phFallback="Video URL (YouTube, Vimeo, .mp4)" />;
+    return <MediaEmpty editor={editor} blockId={block.id} propKey="url" icon="video" theme={theme} labelKey="bnn.media.addVideo" labelFallback="Add a video" phKey="bnn.media.urlVideo" phFallback="Video URL (YouTube, Vimeo, Loom, Dailymotion…)" />;
   const embed = videoEmbed(url);
   if (Platform.OS === "web") {
     if (embed) return <Embed src={embed} title="video" height={340} />;

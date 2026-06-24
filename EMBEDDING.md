@@ -158,9 +158,15 @@ const fromMd = markdownToBlocks(md);
 | `renderMention` | Customize what inline node a chosen mention inserts |
 | `t` | Localization — see [TRANSLATING.md](TRANSLATING.md) |
 | `theme` / `accentColor` / `font` | Theming |
+| `colorOverrides` | Override individual theme color tokens (e.g. `{ menuBackground: "#111", border: "#333" }`) without building a whole `Theme` — recolors the slash menu and block surfaces |
+| `autoMenuOnEmpty` | When the caret sits on an empty paragraph, open the command menu automatically (web; default `true`). Set `false` to require typing `/` |
 | `icons` | Override any lucide icon |
 | `onOpenPage` | Called when a `pageLink` block is opened |
 | `slashItems` / `blockRenderers` / `inlineRenderers` | Custom blocks & commands |
+
+Video blocks accept URLs from YouTube, Vimeo, Loom, Dailymotion, Wistia,
+Streamable and Twitch (or a direct `.mp4`); the host/provider is detected
+automatically and embedded.
 
 See the runnable [web demo](apps/web/src/App.tsx) for a complete multi-page host
 that stores documents in `localStorage` and swaps them with `replaceDocument`.

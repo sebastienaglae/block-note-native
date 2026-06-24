@@ -3,6 +3,20 @@
 All notable changes to `@sebastienaglae/bnn-core` and `@sebastienaglae/bnn-react`.
 This project adheres to [Semantic Versioning](https://semver.org/). Releases are cut from git tags (`vX.Y.Z`).
 
+## [0.4.0]
+
+### Added
+
+- **Auto command menu on empty line** — emptying a paragraph opens the block menu automatically (web), so you can pick a block without typing `/`. Toggle with the new `autoMenuOnEmpty` prop (default `true`).
+- **`colorOverrides` prop** — override individual theme color tokens (slash-menu background, borders, block surfaces, …) without constructing a whole `Theme`; exported `withColors(theme, colors)` helper.
+- **More video providers** — `video` blocks now recognize Loom, Dailymotion, Wistia, Streamable, Twitch and YouTube Shorts in addition to YouTube/Vimeo/`.mp4`.
+
+### Fixed
+
+- **Caret on block switch** — re-focusing a block now always restores the requested caret position (previously a cached-selection guard could leave the cursor in the wrong spot when moving between blocks).
+- **Menu scrolling** — scrolling *inside* the slash/mention menu no longer dismisses it; only a real page scroll closes it.
+- Added generous bottom padding so you can scroll past the last block.
+
 ## [0.3.0]
 
 ### Added

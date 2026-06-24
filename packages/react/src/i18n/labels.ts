@@ -77,7 +77,7 @@ export const enLabels = {
   "bnn.media.addBookmark": "Add a link to bookmark",
   "bnn.media.addMap": "Add a location",
   "bnn.media.urlImage": "Image URL",
-  "bnn.media.urlVideo": "Video URL (YouTube, Vimeo, .mp4)",
+  "bnn.media.urlVideo": "Video URL (YouTube, Vimeo, Loom, Dailymotion…)",
   "bnn.media.urlAudio": "Audio URL",
   "bnn.media.urlFile": "File URL",
   "bnn.media.urlBookmark": "Paste a URL",

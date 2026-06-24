@@ -117,6 +117,16 @@ export function withFont(theme: Theme, font: "default" | "serif" | "mono" | unde
   return { ...theme, fontFamily };
 }
 
+/**
+ * Returns a copy of `theme` with individual color tokens overridden. Lets a host
+ * recolor just the bits they care about (e.g. the slash menu / block surfaces)
+ * without rebuilding a whole `Theme`: `colorOverrides={{ menuBackground: "#111" }}`.
+ */
+export function withColors(theme: Theme, colors: Partial<Theme["colors"]> | undefined): Theme {
+  if (!colors) return theme;
+  return { ...theme, colors: { ...theme.colors, ...colors } };
+}
+
 /** Returns a copy of `theme` with a custom accent color; derives soft/selection tints. */
 export function withAccent(theme: Theme, color: string | undefined): Theme {
   if (!color) return theme;

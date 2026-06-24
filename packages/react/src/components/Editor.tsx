@@ -8,7 +8,7 @@ import {
 import { BnnProvider, useBnn } from "../context";
 import { DndProvider, useDnd } from "../dnd/DndContext";
 import { useEditorState } from "../hooks/useEditor";
-import { lightTheme, withAccent, withFont, type FontChoice, type Theme } from "../theme/theme";
+import { lightTheme, withAccent, withColors, withFont, type FontChoice, type Theme } from "../theme/theme";
 import { TITLE_BLOCK_ID } from "@sebastienaglae/bnn-core";
 import { BlockComponent } from "./BlockComponent";
 import { PageHeader } from "./PageHeader";
@@ -24,6 +24,12 @@ export interface BlockNoteViewProps {
   theme?: Theme;
   /** Custom accent color (any hex/CSS color). Drives accent / soft / selection tints. */
   accentColor?: string;
+  /**
+   * Override individual theme color tokens (slash-menu background, block
+   * surfaces, borders, hover, text, …) without building a whole `Theme`.
+   * Applied on top of `theme` + `accentColor`.
+   */
+  colorOverrides?: Partial<Theme["colors"]>;
   /** Body font for the whole editor. */
   font?: FontChoice;
   blockRenderers?: Record<string, BlockRenderer>;
@@ -42,6 +48,11 @@ export interface BlockNoteViewProps {
   renderMention?: (user: MentionUser) => Parameters<Editor["insertInlineContent"]>[0];
   /** Show the Notion-style page header (icon + cover + fixed title). Default true. */
   showPageHeader?: boolean;
+  /**
+   * Auto-open the block (slash) menu when the caret sits on an empty paragraph,
+   * so emptying a line drops straight into the command list. Default true.
+   */
+  autoMenuOnEmpty?: boolean;
   /** Called when a pageLink block is opened. */
   onOpenPage?: (pageId: string) => void;
   /** Translate function: (key, englishFallback) => string. */
@@ -61,7 +72,10 @@ function defaultRenderMention(user: MentionUser): Parameters<Editor["insertInlin
 }
 
 export function BlockNoteView(props: BlockNoteViewProps): JSX.Element {
-  const theme = withFont(withAccent(props.theme ?? lightTheme, props.accentColor), props.font);
+  const theme = withColors(
+    withFont(withAccent(props.theme ?? lightTheme, props.accentColor), props.font),
+    props.colorOverrides,
+  );
   return (
     <I18nProvider t={props.t}>
       <IconsProvider icons={props.icons}>
@@ -78,6 +92,7 @@ export function BlockNoteView(props: BlockNoteViewProps): JSX.Element {
             theme={theme}
             style={props.style}
             showPageHeader={props.showPageHeader ?? true}
+            autoMenuOnEmpty={props.autoMenuOnEmpty ?? true}
             people={props.people ?? []}
             renderMention={props.renderMention ?? defaultRenderMention}
           />
@@ -92,6 +107,7 @@ function EditorInner({
   theme,
   style,
   showPageHeader,
+  autoMenuOnEmpty,
   people,
   renderMention,
 }: {
@@ -99,6 +115,7 @@ function EditorInner({
   theme: Theme;
   style?: object;
   showPageHeader: boolean;
+  autoMenuOnEmpty: boolean;
   people: MentionUser[];
   renderMention: (user: MentionUser) => Parameters<Editor["insertInlineContent"]>[0];
 }): JSX.Element {
@@ -112,6 +129,7 @@ function EditorInner({
         theme={theme}
         style={style}
         showPageHeader={showPageHeader}
+        autoMenuOnEmpty={autoMenuOnEmpty}
         people={people}
         renderMention={renderMention}
       />
@@ -151,6 +169,7 @@ function EditorContent({
   theme,
   style,
   showPageHeader,
+  autoMenuOnEmpty,
   people,
   renderMention,
 }: {
@@ -158,6 +177,7 @@ function EditorContent({
   theme: Theme;
   style?: object;
   showPageHeader: boolean;
+  autoMenuOnEmpty: boolean;
   people: MentionUser[];
   renderMention: (user: MentionUser) => Parameters<Editor["insertInlineContent"]>[0];
 }): JSX.Element {
@@ -194,17 +214,23 @@ function EditorContent({
 
   // Derive trigger-menu state from the current selection. A "/" opens the block
   // slash menu; an "@" opens the people typeahead (when people are provided).
-  let trigger: { kind: "slash" | "mention"; query: string; start: number; blockId: string } | null = null;
+  let trigger: { kind: "slash" | "mention"; query: string; start: number; blockId: string; auto?: boolean } | null = null;
   if (sel && sel.start === sel.end) {
     const block = editor.getBlock(sel.blockId);
-    if (block && block.content && block.type !== "codeBlock") {
-      const before = inlineToString(block.content).slice(0, sel.start);
+    if (block && block.content !== undefined && block.type !== "codeBlock") {
+      const full = inlineToString(block.content);
+      const before = full.slice(0, sel.start);
       const ms = /(^|\s)\/(\S*)$/.exec(before);
       if (ms) {
         trigger = { kind: "slash", query: ms[2], start: sel.start - ms[2].length - 1, blockId: sel.blockId };
-      } else if (people.length > 0) {
-        const mm = /(^|\s)@(\S*)$/.exec(before);
-        if (mm) trigger = { kind: "mention", query: mm[2], start: sel.start - mm[2].length - 1, blockId: sel.blockId };
+      } else if (people.length > 0 && /(^|\s)@(\S*)$/.test(before)) {
+        const mm = /(^|\s)@(\S*)$/.exec(before)!;
+        trigger = { kind: "mention", query: mm[2], start: sel.start - mm[2].length - 1, blockId: sel.blockId };
+      } else if (autoMenuOnEmpty && Platform.OS === "web" && block.type === "paragraph" && full.length === 0) {
+        // Emptying a line drops straight into the command menu (no "/" needed).
+        // `auto` keeps Enter/Tab/arrows behaving normally (new line, indent, move
+        // between blocks) — you pick a command with the mouse or by typing.
+        trigger = { kind: "slash", query: "", start: 0, blockId: sel.blockId, auto: true };
       }
     }
   }
@@ -229,7 +255,15 @@ function EditorContent({
     if (Platform.OS !== "web") return;
     const s = window.getSelection?.();
     if (!s || s.rangeCount === 0) return;
-    const rect = s.getRangeAt(0).getBoundingClientRect();
+    let rect = s.getRangeAt(0).getBoundingClientRect();
+    // An empty (or just-focused) contentEditable can report a degenerate
+    // (0,0,0,0) caret rect — fall back to the focused block's own box so the
+    // menu (especially the auto-on-empty one) still has somewhere to anchor.
+    if (rect.width === 0 && rect.height === 0 && rect.top === 0 && rect.left === 0) {
+      const el = document.activeElement as HTMLElement | null;
+      const er = el?.getBoundingClientRect?.();
+      if (er && (er.height > 0 || er.top > 0)) rect = er;
+    }
     if (rect.width === 0 && rect.height === 0 && rect.top === 0) return;
     const spaceBelow = window.innerHeight - rect.bottom;
     const openUp = spaceBelow < MENU_H && rect.top > spaceBelow;
@@ -247,9 +281,13 @@ function EditorContent({
       return;
     }
     computeSlashPos();
-    // Scrolling the page dismisses the open component menu (the caret moves with
+    // Scrolling the PAGE dismisses the open component menu (the caret moves with
     // the content, so the menu would otherwise drift); resize just repositions.
-    const onScroll = () => {
+    // Scrolling *inside* the menu's own list must NOT dismiss it, so ignore
+    // scroll events that originate within the menu element.
+    const onScroll = (e: Event) => {
+      const menu = document.getElementById("bnn-slash-menu");
+      if (menu && e.target instanceof Node && menu.contains(e.target)) return;
       if (slashKey) setDismissedKey(slashKey);
       setEmoji(null);
     };
@@ -286,19 +324,23 @@ function EditorContent({
     const handler = (e: KeyboardEvent) => {
       const r = refs.current;
       if (r.slashVisible && r.filtered.length > 0) {
-        if (e.key === "ArrowDown") {
+        // The auto-on-empty menu is a click palette: it must NOT capture Enter/
+        // Tab/arrows, so a blank line still makes a new line, indents, and lets
+        // you move between blocks. A real "/" or "@" trigger captures them.
+        const auto = !!r.slash?.auto;
+        if (!auto && e.key === "ArrowDown") {
           e.preventDefault();
           e.stopPropagation();
           setActiveIndex((i) => Math.min(r.filtered.length - 1, i + 1));
           return;
         }
-        if (e.key === "ArrowUp") {
+        if (!auto && e.key === "ArrowUp") {
           e.preventDefault();
           e.stopPropagation();
           setActiveIndex((i) => Math.max(0, i - 1));
           return;
         }
-        if (e.key === "Enter" || e.key === "Tab") {
+        if (!auto && (e.key === "Enter" || e.key === "Tab")) {
           e.preventDefault();
           e.stopPropagation();
           selectItem(r.filtered[Math.min(r.activeIndex, r.filtered.length - 1)]);
@@ -392,7 +434,7 @@ function EditorContent({
             const node = scrollRef.current as { measureInWindow?: (cb: (x: number, y: number) => void) => void } | null;
             node?.measureInWindow?.((_x, y) => dnd.setContainerOffset(y));
           }}
-          contentContainerStyle={{ paddingBottom: 24 + kbHeight }}
+          contentContainerStyle={{ paddingBottom: 200 + kbHeight }}
         >
           {showPageHeader ? <PageHeader editor={editor} theme={theme} locked={editor.locked} /> : null}
           <View

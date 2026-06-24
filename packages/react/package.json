@@ -1,6 +1,6 @@
 {
   "name": "@sebastienaglae/bnn-react",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Cross-platform (web + React Native) UI for the block editor: blocks, slash menu, toolbar, page tree, comments, custom components, i18n, icons.",
   "license": "MIT",
   "author": "Sébastien Aglaé",
@@ -50,7 +50,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
-    "@sebastienaglae/bnn-core": "0.3.0"
+    "@sebastienaglae/bnn-core": "0.4.0"
   },
   "peerDependencies": {
     "react": ">=18",

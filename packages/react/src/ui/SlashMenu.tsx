@@ -39,6 +39,7 @@ export function SlashMenu(props: SlashMenuProps): JSX.Element | null {
 
   return (
     <View
+      nativeID="bnn-slash-menu"
       style={[
         containerStyle,
         {
