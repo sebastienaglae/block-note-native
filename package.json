@@ -1,7 +1,7 @@
 {
   "name": "block-note-native",
   "private": true,
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Notion-like block editor for Web + React Native (BlockNote-style), built from scratch on a shared platform-agnostic core. No live collaboration; supports custom blocks & inline content.",
   "license": "MIT",
   "author": "Sébastien Aglaé",

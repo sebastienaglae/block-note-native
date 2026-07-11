@@ -45,6 +45,8 @@ export interface EditorOptions {
   initialContent?: PartialBlock[];
   initialMeta?: { icon?: string; cover?: string; title?: PartialInlineContent };
   locked?: boolean;
+  /** Alias for locked, useful when configuring a view as readonly. */
+  readonly?: boolean;
   blockSpecs?: BlockConfig[];
   inlineSpecs?: InlineContentConfig[];
 }
@@ -75,7 +77,7 @@ export class Editor {
       cover: options.initialMeta?.cover,
       title: partialToInline(options.initialMeta?.title),
     };
-    this._locked = options.locked ?? false;
+    this._locked = options.readonly ?? options.locked ?? false;
   }
 
   // ---- state access -------------------------------------------------------
@@ -482,6 +484,14 @@ export class Editor {
 
   get locked(): boolean {
     return this._locked;
+  }
+
+  get readonly(): boolean {
+    return this._locked;
+  }
+
+  setReadonly(readonly: boolean): void {
+    this.setLocked(readonly);
   }
 
   setLocked(locked: boolean): void {

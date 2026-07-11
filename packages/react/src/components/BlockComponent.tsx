@@ -16,9 +16,10 @@ export interface BlockComponentProps {
   editor: Editor;
   depth: number;
   listIndex?: number;
+  disableSideMenu?: boolean;
 }
 
-export function BlockComponent({ block, editor, depth, listIndex }: BlockComponentProps): JSX.Element {
+export function BlockComponent({ block, editor, depth, listIndex, disableSideMenu }: BlockComponentProps): JSX.Element {
   const { theme, blockRenderers, inlineRenderers, setLayout, onOpenPage } = useBnn();
   const t = useT();
   const dnd = useDnd();
@@ -90,7 +91,7 @@ export function BlockComponent({ block, editor, depth, listIndex }: BlockCompone
     >
       {isDropTarget && dnd.state.placement === "before" ? dropLine : null}
       <View style={{ flexDirection: "row", alignItems: "flex-start", paddingVertical: 2 }}>
-        <SideMenu block={block} editor={editor} theme={theme} visible={visible} draggable={depth === 0 && !editor.locked} />
+        {!disableSideMenu ? <SideMenu block={block} editor={editor} theme={theme} visible={visible} draggable={depth === 0 && !editor.locked} /> : null}
         <View style={{ flex: 1, paddingVertical: 1 }}>
           {renderer(renderProps)}
           {/* Hover delete — only for void blocks, which can't be emptied + Backspaced. */}
@@ -132,6 +133,7 @@ export function BlockComponent({ block, editor, depth, listIndex }: BlockCompone
                 editor={editor}
                 depth={depth + 1}
                 listIndex={child.type === "numberedListItem" ? childIndex : undefined}
+                disableSideMenu={disableSideMenu}
               />
             );
           })}

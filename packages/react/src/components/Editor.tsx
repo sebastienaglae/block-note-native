@@ -21,6 +21,10 @@ import type { BlockRenderer, InlineRenderer, MentionUser, SlashMenuItem } from "
 
 export interface BlockNoteViewProps {
   editor: Editor;
+  /** Render the editor without editing controls or empty blocks. */
+  readonly?: boolean;
+  /** Disable optional editor UI components by name. */
+  disableComponents?: Array<"pageHeader" | "sideMenu" | "formattingToolbar" | "slashMenu" | "emojiPicker">;
   theme?: Theme;
   /** Custom accent color (any hex/CSS color). Drives accent / soft / selection tints. */
   accentColor?: string;
@@ -72,6 +76,10 @@ function defaultRenderMention(user: MentionUser): Parameters<Editor["insertInlin
 }
 
 export function BlockNoteView(props: BlockNoteViewProps): JSX.Element {
+  if (props.readonly !== undefined && props.editor.locked !== props.readonly) {
+    props.editor.setLocked(props.readonly);
+  }
+  const disabled = new Set(props.disableComponents ?? []);
   const theme = withColors(
     withFont(withAccent(props.theme ?? lightTheme, props.accentColor), props.font),
     props.colorOverrides,
@@ -95,6 +103,7 @@ export function BlockNoteView(props: BlockNoteViewProps): JSX.Element {
             autoMenuOnEmpty={props.autoMenuOnEmpty ?? true}
             people={props.people ?? []}
             renderMention={props.renderMention ?? defaultRenderMention}
+            disableComponents={disabled}
           />
         </BnnProvider>
       </IconsProvider>
@@ -110,6 +119,7 @@ function EditorInner({
   autoMenuOnEmpty,
   people,
   renderMention,
+  disableComponents,
 }: {
   editor: Editor;
   theme: Theme;
@@ -118,6 +128,7 @@ function EditorInner({
   autoMenuOnEmpty: boolean;
   people: MentionUser[];
   renderMention: (user: MentionUser) => Parameters<Editor["insertInlineContent"]>[0];
+  disableComponents: Set<"pageHeader" | "sideMenu" | "formattingToolbar" | "slashMenu" | "emojiPicker">;
 }): JSX.Element {
   useEditorState(editor);
   const { layouts } = useBnn();
@@ -132,6 +143,7 @@ function EditorInner({
         autoMenuOnEmpty={autoMenuOnEmpty}
         people={people}
         renderMention={renderMention}
+        disableComponents={disableComponents}
       />
     </DndProvider>
   );
@@ -164,6 +176,15 @@ function mentionItems(
     }));
 }
 
+function hasReadonlyContent(block: import("@sebastienaglae/bnn-core").Block): boolean {
+  if (block.content !== undefined && block.content.length > 0) return true;
+  return Object.values(block.props).some((value) => {
+    if (typeof value === "string") return value.trim().length > 0;
+    if (Array.isArray(value)) return value.some((item) => Array.isArray(item) ? item.some(Boolean) : Boolean(item));
+    return value !== undefined && value !== null;
+  }) || block.children.some(hasReadonlyContent);
+}
+
 function EditorContent({
   editor,
   theme,
@@ -172,6 +193,7 @@ function EditorContent({
   autoMenuOnEmpty,
   people,
   renderMention,
+  disableComponents,
 }: {
   editor: Editor;
   theme: Theme;
@@ -180,6 +202,7 @@ function EditorContent({
   autoMenuOnEmpty: boolean;
   people: MentionUser[];
   renderMention: (user: MentionUser) => Parameters<Editor["insertInlineContent"]>[0];
+  disableComponents: Set<"pageHeader" | "sideMenu" | "formattingToolbar" | "slashMenu" | "emojiPicker">;
 }): JSX.Element {
   const { slashItems } = useBnn();
   const dnd = useDnd();
@@ -436,7 +459,7 @@ function EditorContent({
           }}
           contentContainerStyle={{ paddingBottom: 200 + kbHeight }}
         >
-          {showPageHeader ? <PageHeader editor={editor} theme={theme} locked={editor.locked} /> : null}
+          {showPageHeader && !disableComponents.has("pageHeader") ? <PageHeader editor={editor} theme={theme} locked={editor.locked} /> : null}
           <View
             onLayout={(e) => dnd.setBlocksOffset(e.nativeEvent.layout.y)}
             style={{
@@ -447,7 +470,7 @@ function EditorContent({
               paddingTop: showPageHeader ? 6 : 24,
             }}
           >
-            {editor.document.map((block) => {
+            {editor.document.filter((block) => !editor.locked || hasReadonlyContent(block)).map((block) => {
               const idx = block.type === "numberedListItem" ? ++counter : (counter = 0);
               return (
                 <BlockComponent
@@ -456,6 +479,7 @@ function EditorContent({
                   editor={editor}
                   depth={0}
                   listIndex={block.type === "numberedListItem" ? idx : undefined}
+                  disableSideMenu={disableComponents.has("sideMenu")}
                 />
               );
             })}
@@ -463,14 +487,14 @@ function EditorContent({
         </ScrollView>
       </View>
 
-      <FormattingToolbar
+      {!disableComponents.has("formattingToolbar") ? <FormattingToolbar
         editor={editor}
         theme={theme}
         visible={toolbarVisible}
         selectionKey={selectionKey}
         nativeBottom={kbHeight}
-      />
-      {slashVisible ? (
+      /> : null}
+      {slashVisible && !disableComponents.has("slashMenu") ? (
         <SlashMenu
           theme={theme}
           items={filtered}
@@ -481,7 +505,7 @@ function EditorContent({
           onHover={setActiveIndex}
         />
       ) : null}
-      {emoji ? (
+      {emoji && !disableComponents.has("emojiPicker") ? (
         <View
           style={
             Platform.OS === "web"

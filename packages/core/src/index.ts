@@ -76,6 +76,7 @@ export {
   type StyleMode,
 } from "./util/inline";
 export { createId } from "./util/id";
+export { validateDocument, isValidDocument, type ValidationIssue, type ValidationOptions } from "./validation";
 
 // Commands
 export { matchMarkdownInput, type MarkdownInputMatch } from "./commands/markdownInput";
