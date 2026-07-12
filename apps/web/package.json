@@ -1,6 +1,6 @@
 {
   "name": "@bnn/web-demo",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "private": true,
   "type": "module",
   "scripts": {
@@ -10,9 +10,9 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
-    "@sebastienaglae/bnn-core": "0.7.0",
-    "@sebastienaglae/bnn-react": "0.7.0",
-    "@sebastienaglae/bnn-demo-shared": "0.7.0",
+    "@sebastienaglae/bnn-core": "0.7.1",
+    "@sebastienaglae/bnn-react": "0.7.1",
+    "@sebastienaglae/bnn-demo-shared": "0.7.1",
     "lucide-react": "^0.462.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",
