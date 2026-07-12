@@ -7,6 +7,8 @@ A Notion-like, block-based rich-text editor (in the spirit of [BlockNote](https:
 
 > BlockNote itself is built on ProseMirror/TipTap, which is DOM-only and cannot run on React Native. This project is a **from-scratch** implementation: a platform-agnostic core plus a thin, per-platform editable surface, so the *same* document model, commands, slash menu, toolbar, drag-to-reorder, and custom components work everywhere.
 
+![Block Note Native editor preview](docs/editor-preview.png)
+
 ---
 
 ## ✨ Features
@@ -26,6 +28,7 @@ A Notion-like, block-based rich-text editor (in the spirit of [BlockNote](https:
 - **Lock / read-only** mode — a hook for "live" features (presence, locking) without a backend.
 - **Undo / redo** (covers content & page meta), JSON & Markdown **import/export** (with per-spec `toMarkdown` hooks so custom/media blocks export meaningfully), localStorage persistence.
 - **Custom components** — define a block or inline content **once** (with React Native primitives) and it renders on both platforms.
+- **Configurable media** — restrict video providers, choose the map destination (OpenStreetMap, Google Maps, or Apple Maps), and plug in asynchronous image-search providers.
 
 ---
 
@@ -168,6 +171,27 @@ function Editor() {
 ```
 
 See [`packages/demo-shared/src/index.tsx`](packages/demo-shared/src/index.tsx) for the complete, real example — the **same file** is imported by both the [web](apps/web/src/App.tsx) and [native](apps/native/App.tsx) demos.
+
+### Media options
+
+Media behavior is configured once on `BlockNoteView` and uses the same API on web, iOS, and Android:
+
+```tsx
+<BlockNoteView
+  editor={editor}
+  media={{
+    videoProviders: ["youtube", "direct"],
+    mapProvider: "apple", // "google" or "openstreetmap"
+    imageProviders: [{
+      id: "unsplash",
+      label: "Unsplash",
+      search: async (query) => searchUnsplash(query),
+    }],
+  }}
+/> 
+```
+
+An image provider returns `{ url, thumbnailUrl?, title? }` results. The picker is built from React Native primitives, so provider search and selection work on native without a web-only dependency. The media options are also available to custom block renderers through `BlockRenderProps.media`.
 
 ---
 
