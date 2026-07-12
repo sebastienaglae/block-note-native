@@ -3,6 +3,18 @@
 All notable changes to `@sebastienaglae/bnn-core` and `@sebastienaglae/bnn-react`.
 This project adheres to [Semantic Versioning](https://semver.org/). Releases are cut from git tags (`vX.Y.Z`).
 
+## [0.6.0]
+
+### Added
+
+- **Readonly preview mode** — empty blocks are omitted, editor placeholders and command menus are hidden, and block renderers receive `readonly` / `isReadOnly` state.
+- **Disabled components** — optional editor UI components can be disabled with `disableComponents`.
+- **Document validation** — exported `validateDocument` and `isValidDocument` helpers check documents against their schemas.
+
+### Fixed
+
+- Readonly blocks and media components, including empty video editors, are no longer interactive.
+
 ## [0.4.0]
 
 ### Added

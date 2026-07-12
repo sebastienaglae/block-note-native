@@ -1,6 +1,6 @@
 {
   "name": "@sebastienaglae/bnn-core",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Platform-agnostic block-editor engine: document model, schema, transforms, history, markdown.",
   "license": "MIT",
   "author": "Sébastien Aglaé",
