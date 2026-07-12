@@ -1,6 +1,6 @@
 {
   "name": "@sebastienaglae/bnn-demo-shared",
-  "version": "0.7.2",
+  "version": "0.7.3",
   "description": "Shared demo content + custom components used by BOTH the web and native demos (write-once proof).",
   "type": "module",
   "main": "src/index.tsx",
@@ -12,7 +12,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
-    "@sebastienaglae/bnn-react": "0.7.1"
+    "@sebastienaglae/bnn-react": "0.7.3"
   },
   "peerDependencies": {
     "react": ">=18"
