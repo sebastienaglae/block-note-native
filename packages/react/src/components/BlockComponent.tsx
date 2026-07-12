@@ -94,7 +94,7 @@ export function BlockComponent({ block, editor, depth, listIndex, disableSideMen
     >
       {isDropTarget && dnd.state.placement === "before" ? dropLine : null}
       <View style={{ flexDirection: "row", alignItems: "flex-start", paddingVertical: 2 }}>
-        {!disableSideMenu ? <SideMenu block={block} editor={editor} theme={theme} visible={visible} draggable={depth === 0 && !editor.locked} /> : null}
+        {!disableSideMenu && !editor.locked ? <SideMenu block={block} editor={editor} theme={theme} visible={visible} draggable /> : null}
         <View pointerEvents={editor.locked ? "none" : "auto"} style={{ flex: 1, paddingVertical: 1 }}>
           {renderer(renderProps)}
           {/* Hover delete — only for void blocks, which can't be emptied + Backspaced. */}
