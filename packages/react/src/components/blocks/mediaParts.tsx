@@ -66,6 +66,11 @@ export function MediaEmpty(props: {
   const [open, setOpen] = useState(false);
   const [url, setUrl] = useState("");
 
+  // Empty media blocks are not part of the readonly preview. Keep this guard
+  // here as well as in the block list so custom/nested render paths cannot
+  // expose the "add media" editor accidentally.
+  if (editor.locked) return <View />;
+
   const apply = () => {
     const v = url.trim();
     if (v) editor.updateBlock(blockId, { props: { [propKey]: v } });
