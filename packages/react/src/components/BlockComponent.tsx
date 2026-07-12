@@ -58,6 +58,7 @@ export function BlockComponent({ block, editor, depth, listIndex, disableSideMen
     theme,
     isSelected,
     isReadOnly: editor.locked,
+    readonly: editor.locked,
     listIndex,
     InlineContentView,
     onOpenPage,

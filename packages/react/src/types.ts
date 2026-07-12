@@ -63,6 +63,8 @@ export interface BlockRenderProps<B extends Block = Block> {
   isSelected: boolean;
   /** True when the block is rendered as a non-interactive preview. */
   isReadOnly: boolean;
+  /** Whether this block is rendered in readonly preview mode. */
+  readonly: boolean;
   /** 1-based ordinal for numbered list items (else undefined). */
   listIndex?: number;
   /** Navigate to another page (used by pageLink blocks); wired by the host app. */
