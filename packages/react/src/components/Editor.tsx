@@ -249,7 +249,7 @@ function EditorContent({
       } else if (people.length > 0 && /(^|\s)@(\S*)$/.test(before)) {
         const mm = /(^|\s)@(\S*)$/.exec(before)!;
         trigger = { kind: "mention", query: mm[2], start: sel.start - mm[2].length - 1, blockId: sel.blockId };
-      } else if (autoMenuOnEmpty && Platform.OS === "web" && block.type === "paragraph" && full.length === 0) {
+      } else if (!editor.locked && autoMenuOnEmpty && Platform.OS === "web" && block.type === "paragraph" && full.length === 0) {
         // Emptying a line drops straight into the command menu (no "/" needed).
         // `auto` keeps Enter/Tab/arrows behaving normally (new line, indent, move
         // between blocks) — you pick a command with the mouse or by typing.

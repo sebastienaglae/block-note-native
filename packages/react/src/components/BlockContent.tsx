@@ -33,7 +33,7 @@ export function BlockContent(props: BlockContentProps): JSX.Element {
   // `placeholder` may be an i18n key (default blocks) or a raw string (custom blocks).
   // Use the English catalog as the fallback so default blocks read correctly even
   // when no translate function is supplied (otherwise the raw key would show).
-  const resolvedPlaceholder = placeholder
+  const resolvedPlaceholder = editor.locked ? undefined : placeholder
     ? t(placeholder, enLabels[placeholder as LabelKey] ?? placeholder)
     : undefined;
   const content = block.content ?? [];

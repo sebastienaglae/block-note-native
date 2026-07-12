@@ -61,6 +61,8 @@ export interface BlockRenderProps<B extends Block = Block> {
   theme: Theme;
   /** True if the editor selection is inside this block. */
   isSelected: boolean;
+  /** True when the block is rendered as a non-interactive preview. */
+  isReadOnly: boolean;
   /** 1-based ordinal for numbered list items (else undefined). */
   listIndex?: number;
   /** Navigate to another page (used by pageLink blocks); wired by the host app. */
