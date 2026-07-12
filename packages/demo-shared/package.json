@@ -1,6 +1,6 @@
 {
   "name": "@sebastienaglae/bnn-demo-shared",
-  "version": "0.7.1",
+  "version": "0.7.2",
   "description": "Shared demo content + custom components used by BOTH the web and native demos (write-once proof).",
   "type": "module",
   "main": "src/index.tsx",

@@ -3,7 +3,7 @@ import { Image, Pressable, Text, View } from "react-native";
 import type { BlockRenderProps, BlockRenderer } from "../../types";
 import { Icon } from "../../icons/Icon";
 import { extraBlockRenderers } from "./extraBlocks";
-import { ImageProviderPicker, MediaEmpty } from "./mediaParts";
+import { ImageSourcePicker, MediaEmpty } from "./mediaParts";
 
 const Paragraph: BlockRenderer = ({ InlineContentView }) =>
   InlineContentView({ textStyle: { fontSize: 16 }, placeholder: "bnn.ph.paragraph" });
@@ -107,13 +107,13 @@ const Divider: BlockRenderer = ({ theme }) => (
   </View>
 );
 
-const ImageBlock: BlockRenderer = ({ block, editor, theme, media }) => {
+const ImageBlock: BlockRenderer = ({ block, editor, theme, media, isReadOnly }) => {
   const url = String(block.props.url || "");
   const caption = String(block.props.caption || "");
   if (!url) {
     return (
       <View>
-        <MediaEmpty
+        {media.imageProviders?.length && !isReadOnly ? <ImageSourcePicker editor={editor} blockId={block.id} providers={media.imageProviders} theme={theme} /> : <MediaEmpty
         editor={editor}
         blockId={block.id}
         propKey="url"
@@ -123,8 +123,7 @@ const ImageBlock: BlockRenderer = ({ block, editor, theme, media }) => {
         labelFallback="Add an image"
         phKey="bnn.media.urlImage"
         phFallback="Image URL"
-        />
-        {media.imageProviders?.length ? <ImageProviderPicker providers={media.imageProviders} onSelect={(value) => editor.updateBlock(block.id, { props: { url: value } })} /> : null}
+        />}
       </View>
     );
   }

@@ -53,13 +53,42 @@ export function allowedVideoEmbed(url: string, providers?: import("../../types")
   return allowed.includes(provider) ? videoEmbed(url) ?? (provider === "direct" ? url : null) : null;
 }
 
-export function ImageProviderPicker({ providers, onSelect }: { providers: ImageProvider[]; onSelect: (url: string) => void }): JSX.Element {
+export function ImageProviderPicker({ providers, onSelect, theme }: { providers: ImageProvider[]; onSelect: (url: string) => void; theme: Theme }): JSX.Element {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<import("../../types").ImageSearchResult[]>([]);
-  const search = async () => { const provider = providers[0]; if (provider && query.trim()) setResults(await provider.search(query.trim())); };
-  return <View style={{ marginTop: 8, gap: 8 }}>
-    <View style={{ flexDirection: "row", gap: 8 }}><TextInput value={query} onChangeText={setQuery} onSubmitEditing={() => void search()} placeholder="Search images" style={{ flex: 1, borderWidth: 1, borderColor: "#ccc", padding: 8 }} /><Pressable onPress={() => void search()}><Text>Search</Text></Pressable></View>
-    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>{results.map((r) => <Pressable key={r.url} onPress={() => onSelect(r.url)}><Image source={{ uri: r.thumbnailUrl ?? r.url }} style={{ width: 80, height: 60 }} /></Pressable>)}</View>
+  const [providerId, setProviderId] = useState(providers[0]?.id ?? "");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
+  const provider = providers.find((item) => item.id === providerId) ?? providers[0];
+  const search = async () => {
+    const value = query.trim();
+    if (!provider || !value || loading) return;
+    setLoading(true); setError(false);
+    try { setResults(await provider.search(value)); } catch { setResults([]); setError(true); }
+    finally { setLoading(false); }
+  };
+  return <View style={{ marginTop: 10, gap: 10, backgroundColor: theme.colors.backgroundSecondary, borderRadius: theme.radius + 2, borderWidth: 1, borderColor: theme.colors.border, padding: 12 }}>
+    <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+      <View style={{ width: 30, height: 30, borderRadius: 15, alignItems: "center", justifyContent: "center", backgroundColor: theme.colors.accent + "20" }}><Icon name="image" size={16} color={theme.colors.accent} /></View>
+      <View style={{ flex: 1 }}><Text style={{ color: theme.colors.text, fontWeight: "700", fontSize: 14 }}>Find an image</Text><Text style={{ color: theme.colors.textSecondary, fontSize: 12 }}>Search your connected image providers</Text></View>
+    </View>
+    {providers.length > 1 ? <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>{providers.map((item) => <Pressable key={item.id} onPress={() => { setProviderId(item.id); setResults([]); }} style={{ borderRadius: 14, paddingHorizontal: 10, paddingVertical: 6, backgroundColor: item.id === provider?.id ? theme.colors.accent : theme.colors.background, borderWidth: 1, borderColor: item.id === provider?.id ? theme.colors.accent : theme.colors.border }}><Text style={{ color: item.id === provider?.id ? theme.colors.onAccent : theme.colors.textSecondary, fontSize: 12, fontWeight: "600" }}>{item.label}</Text></Pressable>)}</View> : null}
+    <View style={{ flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: theme.colors.background, borderRadius: theme.radius, borderWidth: 1, borderColor: theme.colors.border, paddingLeft: 10, paddingRight: 6 }}><Icon name="search" size={16} color={theme.colors.textSecondary} /><TextInput value={query} onChangeText={setQuery} onSubmitEditing={() => void search()} placeholder="Search images…" placeholderTextColor={theme.colors.placeholder} style={{ flex: 1, color: theme.colors.text, paddingVertical: 10, fontSize: 14 }} /><Pressable accessibilityRole="button" accessibilityLabel="Search images" onPress={() => void search()} disabled={loading || !query.trim()} style={{ borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: loading || !query.trim() ? theme.colors.border : theme.colors.accent }}><Text style={{ color: loading || !query.trim() ? theme.colors.textSecondary : theme.colors.onAccent, fontWeight: "700", fontSize: 13 }}>{loading ? "…" : "Search"}</Text></Pressable></View>
+    {error ? <Text style={{ color: theme.colors.accent, fontSize: 12 }}>Couldn’t search this provider. Try again.</Text> : null}
+    {!loading && !error && query.trim() && results.length === 0 ? <Text style={{ color: theme.colors.textSecondary, fontSize: 12, textAlign: "center", paddingVertical: 8 }}>No images found yet.</Text> : null}
+    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>{results.map((item) => <Pressable key={item.url} accessibilityRole="button" accessibilityLabel={item.title ?? "Choose image"} onPress={() => onSelect(item.url)} style={{ width: "31%", minWidth: 84, aspectRatio: 1.35, borderRadius: 8, overflow: "hidden", backgroundColor: theme.colors.border }}><Image source={{ uri: item.thumbnailUrl ?? item.url }} style={{ width: "100%", height: "100%" }} resizeMode="cover" /></Pressable>)}</View>
+  </View>;
+}
+
+export function ImageSourcePicker({ editor, blockId, providers, theme }: { editor: Editor; blockId: string; providers: ImageProvider[]; theme: Theme }): JSX.Element {
+  const [mode, setMode] = useState<"url" | "provider">("url");
+  const [url, setUrl] = useState("");
+  const apply = () => { const value = url.trim(); if (value) editor.updateBlock(blockId, { props: { url: value } }); };
+  return <View style={{ marginTop: 8, gap: 10 }}>
+    <View style={{ flexDirection: "row", gap: 6 }}>
+      {(["url", "provider"] as const).map((item) => <Pressable key={item} onPress={() => setMode(item)} style={{ flex: 1, alignItems: "center", borderRadius: 8, paddingVertical: 9, backgroundColor: mode === item ? theme.colors.accent : theme.colors.backgroundSecondary, borderWidth: 1, borderColor: mode === item ? theme.colors.accent : theme.colors.border }}><Text style={{ color: mode === item ? theme.colors.onAccent : theme.colors.textSecondary, fontWeight: "700", fontSize: 13 }}>{item === "url" ? "Image URL" : "Search provider"}</Text></Pressable>)}
+    </View>
+    {mode === "url" ? <View style={{ flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: theme.colors.backgroundSecondary, borderRadius: theme.radius, borderWidth: 1, borderColor: theme.colors.border, paddingLeft: 10, paddingRight: 6 }}><TextInput value={url} onChangeText={setUrl} onSubmitEditing={apply} placeholder="Paste an image URL…" placeholderTextColor={theme.colors.placeholder} style={{ flex: 1, color: theme.colors.text, paddingVertical: 10, fontSize: 14 }} /><Pressable onPress={apply} disabled={!url.trim()} style={{ borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: url.trim() ? theme.colors.accent : theme.colors.border }}><Text style={{ color: url.trim() ? theme.colors.onAccent : theme.colors.textSecondary, fontWeight: "700", fontSize: 13 }}>Add</Text></Pressable></View> : <ImageProviderPicker theme={theme} providers={providers} onSelect={(value) => editor.updateBlock(blockId, { props: { url: value } })} />}
   </View>;
 }
 
