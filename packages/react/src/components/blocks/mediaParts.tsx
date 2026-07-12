@@ -1,12 +1,13 @@
 /** Shared building blocks for media blocks: inline URL input + OSM map embed. */
 import { useState } from "react";
-import { Linking, Platform, Pressable, Text, TextInput, View } from "react-native";
+import { Image, Linking, Platform, Pressable, Text, TextInput, View } from "react-native";
 import type { Editor } from "@sebastienaglae/bnn-core";
 import type { Theme } from "../../theme/theme";
 import { Icon } from "../../icons/Icon";
 import type { IconName } from "../../icons/iconNames";
 import { useT } from "../../i18n/I18nContext";
 import { Embed } from "./Embed";
+import type { ImageProvider } from "../../types";
 
 export function openUrl(url: string): void {
   if (!url) return;
@@ -43,6 +44,23 @@ export function videoEmbed(url: string): string | null {
     return `https://player.twitch.tv/?video=${twitch[1]}&parent=${window.location.hostname}&autoplay=false`;
   }
   return null;
+}
+
+export function allowedVideoEmbed(url: string, providers?: import("../../types").VideoProvider[]): string | null {
+  const allowed = providers ?? ["youtube", "vimeo", "dailymotion", "loom", "wistia", "streamable", "twitch", "direct"];
+  const lower = url.toLowerCase();
+  const provider = lower.includes("youtube") || lower.includes("youtu.be") ? "youtube" : lower.includes("vimeo") ? "vimeo" : lower.includes("dailymotion") || lower.includes("dai.ly") ? "dailymotion" : lower.includes("loom") ? "loom" : lower.includes("wistia") || lower.includes("wi.st") ? "wistia" : lower.includes("streamable") ? "streamable" : lower.includes("twitch") ? "twitch" : "direct";
+  return allowed.includes(provider) ? videoEmbed(url) ?? (provider === "direct" ? url : null) : null;
+}
+
+export function ImageProviderPicker({ providers, onSelect }: { providers: ImageProvider[]; onSelect: (url: string) => void }): JSX.Element {
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<import("../../types").ImageSearchResult[]>([]);
+  const search = async () => { const provider = providers[0]; if (provider && query.trim()) setResults(await provider.search(query.trim())); };
+  return <View style={{ marginTop: 8, gap: 8 }}>
+    <View style={{ flexDirection: "row", gap: 8 }}><TextInput value={query} onChangeText={setQuery} onSubmitEditing={() => void search()} placeholder="Search images" style={{ flex: 1, borderWidth: 1, borderColor: "#ccc", padding: 8 }} /><Pressable onPress={() => void search()}><Text>Search</Text></Pressable></View>
+    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>{results.map((r) => <Pressable key={r.url} onPress={() => onSelect(r.url)}><Image source={{ uri: r.thumbnailUrl ?? r.url }} style={{ width: 80, height: 60 }} /></Pressable>)}</View>
+  </View>;
 }
 
 /** A mobile Chrome UA — YouTube serves an embeddable player to it inside a WebView. */
@@ -139,7 +157,7 @@ export function MediaEmpty(props: {
  * whereas a React-Native `fetch` gets blocked. The map is static (locked) and
  * its tiles follow the light/dark theme (CARTO basemaps).
  */
-export function MapEmbed({ query, theme }: { query: string; theme: Theme }): JSX.Element {
+export function MapEmbed({ query, theme, provider = "openstreetmap" }: { query: string; theme: Theme; provider?: import("../../types").MapProvider }): JSX.Element {
   const dark = !!theme.dark;
   const bg = theme.colors.backgroundSecondary;
   const tiles = dark
@@ -167,5 +185,7 @@ fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q='+encode
    L.marker([lat,lon]).addTo(map);
  }).catch(function(){document.getElementById('msg').textContent='Map unavailable';});
 </script></body></html>`;
-  return <Embed html={html} title="map" height={260} interactive={false} background={bg} />;
+  const encoded = encodeURIComponent(query);
+  const mapUrl = provider === "google" ? `https://www.google.com/maps/search/?api=1&query=${encoded}` : provider === "apple" ? `https://maps.apple.com/?q=${encoded}` : `https://www.openstreetmap.org/search?query=${encoded}`;
+  return <View><Embed html={html} title="map" height={260} interactive={false} background={bg} /><Pressable onPress={() => openUrl(mapUrl)} style={{ padding: 8 }}><Text style={{ color: theme.colors.accent, textAlign: "right" }}>Open in {provider === "google" ? "Google Maps" : provider === "apple" ? "Apple Maps" : "OpenStreetMap"}</Text></Pressable></View>;
 }

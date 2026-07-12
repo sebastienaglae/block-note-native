@@ -1,7 +1,7 @@
 import { createContext, useContext, useMemo, useRef, type ReactNode } from "react";
 import type { Editor } from "@sebastienaglae/bnn-core";
 import type { Theme } from "./theme/theme";
-import type { BlockRenderer, InlineRenderer, SlashMenuItem } from "./types";
+import type { BlockRenderer, InlineRenderer, SlashMenuItem, MediaOptions } from "./types";
 import { defaultBlockRenderers } from "./components/blocks/defaultBlocks";
 import { defaultSlashItems } from "./ui/defaultSlashItems";
 
@@ -21,6 +21,7 @@ export interface BnnContextValue {
   layouts: React.MutableRefObject<Map<string, BlockLayout>>;
   setLayout: (id: string, layout: BlockLayout | null) => void;
   onOpenPage?: (pageId: string) => void;
+  media: MediaOptions;
 }
 
 const BnnContext = createContext<BnnContextValue | null>(null);
@@ -38,6 +39,7 @@ export interface BnnProviderProps {
   inlineRenderers?: Record<string, InlineRenderer>;
   slashItems?: SlashMenuItem[];
   onOpenPage?: (pageId: string) => void;
+  media?: MediaOptions;
   children: ReactNode;
 }
 
@@ -58,8 +60,9 @@ export function BnnProvider(props: BnnProviderProps): JSX.Element {
         else layouts.current.delete(id);
       },
       onOpenPage: props.onOpenPage,
+      media: props.media ?? {},
     }),
-    [editor, theme, props.blockRenderers, props.inlineRenderers, props.slashItems, props.onOpenPage],
+    [editor, theme, props.blockRenderers, props.inlineRenderers, props.slashItems, props.onOpenPage, props.media],
   );
 
   return <BnnContext.Provider value={value}>{children}</BnnContext.Provider>;

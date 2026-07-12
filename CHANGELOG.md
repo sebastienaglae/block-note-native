@@ -3,6 +3,13 @@
 All notable changes to `@sebastienaglae/bnn-core` and `@sebastienaglae/bnn-react`.
 This project adheres to [Semantic Versioning](https://semver.org/). Releases are cut from git tags (`vX.Y.Z`).
 
+## [0.7.0]
+
+### Added
+
+- Configurable media options: restrict video providers, choose Google Maps, Apple Maps, or OpenStreetMap links, and plug in asynchronous image search providers with selectable results.
+- Editor updates now skip redundant block-property mutations.
+
 ## [0.6.0]
 
 ### Added

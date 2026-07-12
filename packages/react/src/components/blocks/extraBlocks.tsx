@@ -5,7 +5,7 @@ import type { Theme } from "../../theme/theme";
 import { Icon } from "../../icons/Icon";
 import { Embed } from "./Embed";
 import { AudioPlayer } from "./AudioPlayer";
-import { MOBILE_UA, MapEmbed, MediaEmpty, hostOf, openUrl, videoEmbed } from "./mediaParts";
+import { MOBILE_UA, MapEmbed, MediaEmpty, allowedVideoEmbed, hostOf, openUrl } from "./mediaParts";
 
 function Triangle({ collapsed, theme, onPress }: { collapsed: boolean; theme: Theme; onPress: () => void }) {
   return (
@@ -48,11 +48,11 @@ const ToggleHeading: BlockRenderer = ({ block, editor, theme, InlineContentView 
   );
 };
 
-const VideoBlock: BlockRenderer = ({ block, editor, theme }) => {
+const VideoBlock: BlockRenderer = ({ block, editor, theme, media }) => {
   const url = String(block.props.url || "");
   if (!url)
     return <MediaEmpty editor={editor} blockId={block.id} propKey="url" icon="video" theme={theme} labelKey="bnn.media.addVideo" labelFallback="Add a video" phKey="bnn.media.urlVideo" phFallback="Video URL (YouTube, Vimeo, Loom, Dailymotion…)" />;
-  const embed = videoEmbed(url);
+  const embed = allowedVideoEmbed(url, media.videoProviders);
   if (Platform.OS === "web") {
     if (embed) return <Embed src={embed} title="video" height={340} />;
     return <video src={url} controls style={{ width: "100%", borderRadius: 8, backgroundColor: "#000" }} />;
@@ -106,11 +106,11 @@ const BookmarkBlock: BlockRenderer = ({ block, editor, theme }) => {
   );
 };
 
-const MapBlock: BlockRenderer = ({ block, editor, theme }) => {
+const MapBlock: BlockRenderer = ({ block, editor, theme, media }) => {
   const query = String(block.props.query || "");
   if (!query)
     return <MediaEmpty editor={editor} blockId={block.id} propKey="query" icon="map" theme={theme} labelKey="bnn.media.addMap" labelFallback="Add a location" phKey="bnn.media.urlMap" phFallback="Place or address" />;
-  return <MapEmbed query={query} theme={theme} />;
+  return <MapEmbed query={query} theme={theme} provider={media.mapProvider} />;
 };
 
 const PageLinkBlock: BlockRenderer = ({ block, theme, onOpenPage }) => (

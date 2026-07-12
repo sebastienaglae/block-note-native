@@ -17,10 +17,11 @@ import { SlashMenu } from "../ui/SlashMenu";
 import { EmojiPicker } from "../ui/EmojiPicker";
 import { I18nProvider, type TFunction } from "../i18n/I18nContext";
 import { IconsProvider, type IconOverrides } from "../icons/IconContext";
-import type { BlockRenderer, InlineRenderer, MentionUser, SlashMenuItem } from "../types";
+import type { BlockRenderer, InlineRenderer, MentionUser, SlashMenuItem, MediaOptions } from "../types";
 
 export interface BlockNoteViewProps {
   editor: Editor;
+  media?: MediaOptions;
   /** Render the editor without editing controls or empty blocks. */
   readonly?: boolean;
   /** Disable optional editor UI components by name. */
@@ -94,6 +95,7 @@ export function BlockNoteView(props: BlockNoteViewProps): JSX.Element {
           inlineRenderers={props.inlineRenderers}
           slashItems={props.slashItems}
           onOpenPage={props.onOpenPage}
+          media={props.media}
         >
           <EditorInner
             editor={props.editor}

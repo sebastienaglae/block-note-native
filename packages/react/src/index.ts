@@ -60,4 +60,9 @@ export type {
   RichTextInputProps,
   EditableSelection,
   BlockTextStyle,
+  MediaOptions,
+  VideoProvider,
+  MapProvider,
+  ImageProvider,
+  ImageSearchResult,
 } from "./types";

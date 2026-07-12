@@ -20,7 +20,7 @@ export interface BlockComponentProps {
 }
 
 export function BlockComponent({ block, editor, depth, listIndex, disableSideMenu }: BlockComponentProps): JSX.Element {
-  const { theme, blockRenderers, inlineRenderers, setLayout, onOpenPage } = useBnn();
+  const { theme, blockRenderers, inlineRenderers, setLayout, onOpenPage, media } = useBnn();
   const t = useT();
   const dnd = useDnd();
   const [hover, setHover] = useState(false);
@@ -59,6 +59,7 @@ export function BlockComponent({ block, editor, depth, listIndex, disableSideMen
     isSelected,
     isReadOnly: editor.locked,
     readonly: editor.locked,
+    media: media ?? {},
     listIndex,
     InlineContentView,
     onOpenPage,

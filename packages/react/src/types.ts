@@ -23,6 +23,12 @@ export interface BlockTextStyle {
   fontStyle?: "normal" | "italic";
 }
 
+export type VideoProvider = "youtube" | "vimeo" | "dailymotion" | "loom" | "wistia" | "streamable" | "twitch" | "direct";
+export type MapProvider = "openstreetmap" | "google" | "apple";
+export interface ImageSearchResult { url: string; title?: string; thumbnailUrl?: string; }
+export interface ImageProvider { id: string; label: string; search(query: string): Promise<ImageSearchResult[]>; }
+export interface MediaOptions { videoProviders?: VideoProvider[]; mapProvider?: MapProvider; imageProviders?: ImageProvider[]; }
+
 /** The platform-agnostic contract every editable surface implements. */
 export interface RichTextInputProps {
   blockId: string;
@@ -65,6 +71,7 @@ export interface BlockRenderProps<B extends Block = Block> {
   isReadOnly: boolean;
   /** Whether this block is rendered in readonly preview mode. */
   readonly: boolean;
+  media: MediaOptions;
   /** 1-based ordinal for numbered list items (else undefined). */
   listIndex?: number;
   /** Navigate to another page (used by pageLink blocks); wired by the host app. */

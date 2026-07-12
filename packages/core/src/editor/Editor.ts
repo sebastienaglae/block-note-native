@@ -203,6 +203,7 @@ export class Editor {
       if (update.content !== undefined) content = partialToInline(update.content);
       if (spec && spec.content === "none") content = undefined;
       else if (content === undefined && spec && spec.content === "inline") content = [];
+      if (nextType === loc.block.type && shallowEqual(props, loc.block.props) && content === loc.block.content) return null;
       const document = replaceBlock(this._document, blockId, (b) => ({
         ...b,
         type: nextType,
@@ -495,6 +496,7 @@ export class Editor {
   }
 
   setLocked(locked: boolean): void {
+    if (this._locked === locked) return;
     this._locked = locked;
     this.emit();
   }
@@ -519,6 +521,11 @@ export class Editor {
 
 function ensureNonEmpty(document: Block[], schema: BlockSchema): Block[] {
   return document.length ? document : [normalizeBlock({ type: "paragraph" }, schema)];
+}
+
+function shallowEqual(a: Record<string, unknown>, b: Record<string, unknown>): boolean {
+  const ak = Object.keys(a);
+  return ak.length === Object.keys(b).length && ak.every((key) => a[key] === b[key]);
 }
 
 function icLen(ic: InlineContent): number {
